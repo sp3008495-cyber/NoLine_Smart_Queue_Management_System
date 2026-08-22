@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NoLine — Smart Queue Display Board</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .flash-pulse {
+      animation: flashPulseAnim 1.1s ease-in-out 3;
+    }
+
+    @keyframes flashPulseAnim {
+
+      0%,
+      100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(96, 165, 250, 0);
+      }
+
+      50% {
+        transform: scale(1.02);
+        box-shadow: 0 0 60px rgba(96, 165, 250, 0.7);
+      }
+    }
+  </style>
+</head>
+
+<body class="tv-body">
+  <header class="tv-header">
+    <div class="brand">
+      <div class="brand-icon">NoLine</div>
+      <div>
+        <h1 style="font-size: 1.5rem; font-weight: 800; color: white;">Now Serving</h1>
+        <div style="color: #93c5fd; font-size: 0.9rem;" id="branch-label">City Hospital (Main Branch)</div>
+      </div>
+    </div>
+    <div style="font-size: 1.4rem; color: #94a3b8; font-variant-numeric: tabular-nums; font-weight: 700;" id="clock">
+      --:--:--</div>
+  </header>
+
+  <main class="tv-main">
+    <div class="tv-now-serving" id="now-serving-box">
+      <div style="font-size: 1.2rem; letter-spacing: 4px; color: #bfdbfe; font-weight: 800; margin-bottom: 0.5rem;">
+        CALLING NOW</div>
+      <div class="token" id="current-token">--</div>
+      <div style="font-size: 2rem; font-weight: 700; margin-top: 1rem; color: #e0e7ff;" id="current-counter">—</div>
+      <div style="font-size: 1.2rem; color: #93c5fd; margin-top: 0.3rem;" id="current-service">Waiting for next call…
+      </div>
+    </div>
+
+    <div class="tv-recent-list">
+      <h2 style="font-size: 1rem; color: #94a3b8; letter-spacing: 1px; margin-bottom: 1rem;">RECENTLY CALLED</h2>
+      <div id="recent-rows"></div>
+      <div style="display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.4rem;" id="waiting-summary"></div>
+    </div>
+  </main>
+
+  <div id="voice-status-badge"
+    style="position: fixed; bottom: 0.6rem; right: 0.8rem; background: #7c2d12; color: #fed7aa; font-size: 0.75rem; padding: 0.4rem 0.8rem; border-radius: 8px; display: none; z-index: 20;">
+  </div>
+
+  <footer
+    style="text-align: center; padding: 0.6rem; font-size: 0.8rem; color: #475569; background: var(--dark-surface);">
+    Announcements play in English and Hindi (हिन्दी) automatically — Web Speech API[cite: 2]
+  </footer>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const BRANCH = params.get('branch') || 'City Hospital (Main Branch)';
+    const SERVICE_FILTER = params.get('service') || null;
+    const API_URL = window.location.origin + "/api";
+    const POLL_MS = 4000;
+
+    let lastAnnouncedTokenId = null;
+    let voicesReady = false;
+    let hindiVoice = null;
+    let englishVoice = null;
+
+    document.getElementById('branch-label').innerText = SERVICE_FILTER ? `${BRANCH} · ${SERVICE_FILTER}` : BRANCH;
+
+    function updateClock() {
+      document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-IN', { hour12: true });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    function pickVoices() {
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices.length) return;
+      hindiVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('hi')) || null;
+      englishVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en-in'))
+        || voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en'))
+        || null;
+      voicesReady = true;
+      updateVoiceStatusBadge();
+    }
+    if ('speechSynthesis' in window) {
+      pickVoices();
+      window.speechSynthesis.onvoiceschanged = pickVoices;
+    } else {
+      updateVoiceStatusBadge();
+    }
+
+    function updateVoiceStatusBadge() {
+      const badge = document.getElementById('voice-status-badge');
+      if (!('speechSynthesis' in window)) {
+        badge.style.display = 'block';
+        badge.innerText = '⚠️ Speech synthesis not supported on this browser.';
+      } else if (voicesReady && !hindiVoice) {
+        badge.style.display = 'block';
+        badge.innerText = '⚠️ Hindi voice not installed — announcements are English-only.';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    function speak(text, voice, lang) {
+      return new Promise((resolve) => {
+        if (!('speechSynthesis' in window)) return resolve();
+        const utter = new SpeechSynthesisUtterance(text);
+        if (voice) utter.voice = voice;
+        utter.lang = lang;
+        utter.rate = 0.95;
+        utter.onend = resolve;
+        utter.onerror = resolve;
+        window.speechSynthesis.speak(utter);
+      });
+    }
+
+    function playChime() {
+      return new Promise((resolve) => {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const tones = [880, 1108.73];
+          let t = ctx.currentTime;
+
+          tones.forEach((freq) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.0001, t);
+            gain.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.3);
+            t += 0.3;
+          });
+
+          setTimeout(resolve, tones.length * 300 + 150);
+        } catch (e) {
+          resolve();
+        }
+      });
+    }
+
+    async function announceToken(tokenNumber, counter) {
+      const spokenToken = tokenNumber.split('').join(' ');
+      const englishText = `Token ${spokenToken}, please proceed to ${counter}.`;
+      const hindiText = `टोकन ${spokenToken}, कृपया ${counter} पर जाएं।`;
+
+      await playChime();
+      await speak(englishText, englishVoice, 'en-IN');
+      await speak(hindiText, hindiVoice, 'hi-IN');
+    }
+
+    function flashNowServing() {
+      const box = document.getElementById('now-serving-box');
+      box.classList.remove('flash-pulse');
+      void box.offsetWidth;
+      box.classList.add('flash-pulse');
+    }
+
+    function renderWaitingSummary(waiting) {
+      const el = document.getElementById('waiting-summary');
+      if (!waiting || waiting.length === 0) {
+        el.innerHTML = '';
+        return;
+      }
+      el.innerHTML = waiting.map(w => `
+        <div style="background: var(--dark-surface-2); border-radius: 10px; padding: 0.6rem 0.9rem; font-size: 0.85rem; color: #cbd5e1;">
+          <b style="color: white; font-size: 1rem;">${w.waiting_count}</b> waiting · ${w.service_name || ''} (${w.counter_number || ''})
+        </div>
+      `).join('');
+    }
+
+    function renderBoard(data) {
+      const calledTokens = (data && data.called) || [];
+      renderWaitingSummary((data && data.waiting) || []);
+
+      if (calledTokens.length === 0) return;
+
+      const latest = calledTokens[0];
+
+      document.getElementById('current-token').innerText = latest.token_number;
+      document.getElementById('current-counter').innerText = latest.counter_number || '';
+      document.getElementById('current-service').innerText = latest.service_name || '';
+
+      const rowsHtml = calledTokens.slice(1, 8).map(t => `
+        <div class="tv-recent-row">
+          <span style="font-weight: 800; font-size: 1.3rem;">${t.token_number}</span>
+          <span style="color: #94a3b8; font-size: 0.85rem;">${t.service_name || ''} · ${t.counter_number || ''}</span>
+        </div>
+      `).join('');
+      document.getElementById('recent-rows').innerHTML = rowsHtml || '<p style="color:#64748b;">No earlier calls yet.</p>';
+
+      if (latest.token_id !== lastAnnouncedTokenId) {
+        const isFirstLoad = lastAnnouncedTokenId === null;
+        lastAnnouncedTokenId = latest.token_id;
+        flashNowServing();
+        if (!isFirstLoad) {
+          announceToken(latest.token_number, latest.counter_number || 'your counter');
+        }
+      }
+    }
+
+    async function pollBoard() {
+      try {
+        let url = `${API_URL}/tokens/board?branch=${encodeURIComponent(BRANCH)}`;
+        if (SERVICE_FILTER) url += `&service=${encodeURIComponent(SERVICE_FILTER)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        renderBoard(data);
+      } catch (e) {
+        console.log('Board poll retry:', e.message);
+      }
+    }
+
+    pollBoard();
+    setInterval(pollBoard, POLL_MS);
+  </script>
+</body>
+
+</html>

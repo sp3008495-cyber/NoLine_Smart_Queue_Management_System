@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super-Admin Network Master Control Room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .admin-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .metric-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .metric-card h4 {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .metric-card .val {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--primary);
+      margin-top: 0.4rem;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+      background: white;
+      padding: 0.75rem 1.25rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+
+    .filter-btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .filter-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+  </style>
+</head>
+
+<body style="background: var(--bg);">
+
+  <header>
+    <div class="nav-container">
+      <div class="brand" onclick="window.location.href='index.html'">
+        <div class="brand-icon" style="background: #0f172a;">ADMIN</div>
+        <div>
+          <h3>Network Command Center</h3>
+          <p style="font-size:0.7rem; color:var(--text-muted);">Restricted Super-Admin Access</p>
+        </div>
+      </div>
+      <ul class="nav-links">
+        <li><a href="index.html">← Hospital Portal</a></li>
+        <li id="admin-logout-btn" class="hidden"><button class="btn"
+            style="padding: 4px 12px; width: auto; font-size: 0.8rem; background: #fee2e2; color: #dc2626;"
+            onclick="adminLogout()">Logout</button></li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Super-Admin Login Gate -->
+  <section id="admin-login-view" style="max-width: 420px; margin: 4rem auto; padding: 0 1rem;">
+    <div class="card" style="box-shadow: var(--shadow-md);">
+      <div style="font-size: 2.5rem; text-align: center;">🔒</div>
+      <h2 class="card-title" style="text-align: center; margin-top: 0.5rem;">Super-Admin Login</h2>
+      <p class="card-subtitle" style="text-align: center;">Authorized administrators only. Elevated credentials
+        required.</p>
+
+      <form onsubmit="handleAdminLogin(event)">
+        <div class="form-group">
+          <label>Admin Mobile Number</label>
+          <input type="tel" id="admin-phone" placeholder="1234567890" required>
+        </div>
+        <div class="form-group">
+          <label>Admin Password</label>
+          <input type="password" id="admin-password" placeholder="Example@123" required>
+        </div>
+        <button type="submit" class="btn btn-dark">Authenticate Command Access</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Protected Master Dashboard -->
+  <main id="admin-dashboard-view" class="container hidden" style="max-width: 1280px; margin-top: 1.5rem;">
+
+    <div
+      style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <h2 style="font-size: 1.5rem; font-weight: 800;">Hospital Network Operations</h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted);" id="date-range-sub">Displaying: Today's live activity
+        </p>
+      </div>
+      <button class="btn btn-primary" style="width: auto;" onclick="loadAdminMetrics()">🔄 Refresh Data</button>
+    </div>
+
+    <!-- Date Filter Bar -->
+    <div class="filter-bar">
+      <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">📅 Filter Period:</span>
+      <button class="filter-btn active" id="btn-filter-today" onclick="setDateFilter('today')">Today</button>
+      <button class="filter-btn" id="btn-filter-yesterday" onclick="setDateFilter('yesterday')">Yesterday</button>
+      <button class="filter-btn" id="btn-filter-week" onclick="setDateFilter('week')">Last 7 Days</button>
+      <button class="filter-btn" id="btn-filter-all" onclick="setDateFilter('all')">All Time</button>
+
+      <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
+        <span style="font-size: 0.85rem; color: var(--text-muted);">Custom Date:</span>
+        <input type="date" id="custom-date-picker" onchange="handleCustomDateChange()"
+          style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.85rem;">
+      </div>
+    </div>
+
+    <div class="admin-stat-grid">
+      <div class="metric-card">
+        <h4>Total Volume</h4>
+        <div class="val" id="metric-total-tokens">0</div>
+      </div>
+      <div class="metric-card">
+        <h4>Tokens Waiting</h4>
+        <div class="val" style="color: #d97706;" id="metric-waiting-tokens">0</div>
+      </div>
+      <div class="metric-card">
+        <h4>Consultations Completed</h4>
+        <div class="val" style="color: #16a34a;" id="metric-completed-tokens">0</div>
+      </div>
+      <div class="metric-card">
+        <h4>Active Doctor Availability</h4>
+        <div class="val" style="color: #0284c7;" id="metric-doctor-avail">0%</div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+      <div class="card" style="margin:0;">
+        <h3 class="card-title">Volume by Hospital Branch</h3>
+        <canvas id="branchChart" style="max-height: 260px;"></canvas>
+      </div>
+      <div class="card" style="margin:0;">
+        <h3 class="card-title">Triage Priority Ratio</h3>
+        <canvas id="triageChart" style="max-height: 260px;"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title" style="margin-bottom: 1rem;">👨‍⚕️ Real-Time Staff & Doctor Duty Roster</h3>
+      <div class="table-responsive">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border); font-size: 0.85rem; color: var(--text-muted);">
+              <th style="padding: 10px;">Name / Role</th>
+              <th style="padding: 10px;">Specialty / Department</th>
+              <th style="padding: 10px;">Branch</th>
+              <th style="padding: 10px;">Status</th>
+              <th style="padding: 10px;">Unavailability Reason</th>
+            </tr>
+          </thead>
+          <tbody id="admin-roster-body">
+            <tr>
+              <td colspan="5" style="text-align: center; padding: 15px;">Loading network roster...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    const API_URL = window.location.origin + "/api";
+    let branchChartInstance = null;
+    let triageChartInstance = null;
+    let activeRange = 'today';
+    let customDate = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const adminToken = sessionStorage.getItem('adminToken');
+      if (adminToken) {
+        showDashboard();
+      }
+    });
+
+    async function handleAdminLogin(e) {
+      e.preventDefault();
+      const phone = document.getElementById('admin-phone').value.trim();
+      const password = document.getElementById('admin-password').value.trim();
+
+      try {
+        const res = await fetch(`${API_URL}/admin/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.token) {
+          sessionStorage.setItem('adminToken', data.token);
+          showDashboard();
+        } else {
+          alert(data.error || 'Authentication failed.');
+        }
+      } catch (err) {
+        alert('Server connection error.');
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById('admin-login-view').classList.add('hidden');
+      document.getElementById('admin-dashboard-view').classList.remove('hidden');
+      document.getElementById('admin-logout-btn').classList.remove('hidden');
+      loadAdminMetrics();
+    }
+
+    function adminLogout() {
+      sessionStorage.removeItem('adminToken');
+      location.reload();
+    }
+
+    function setDateFilter(rangeKey) {
+      activeRange = rangeKey;
+      customDate = null;
+      document.getElementById('custom-date-picker').value = '';
+
+      ['today', 'yesterday', 'week', 'all'].forEach(k => {
+        document.getElementById(`btn-filter-${k}`).classList.toggle('active', k === rangeKey);
+      });
+
+      const labelMap = {
+        today: "Today's live activity",
+        yesterday: "Yesterday's historical data",
+        week: "Past 7 days aggregated activity",
+        all: "All-time historical volume"
+      };
+      document.getElementById('date-range-sub').innerText = `Displaying: ${labelMap[rangeKey]}`;
+      loadAdminMetrics();
+    }
+
+    function handleCustomDateChange() {
+      const dateVal = document.getElementById('custom-date-picker').value;
+      if (!dateVal) return;
+
+      ['today', 'yesterday', 'week', 'all'].forEach(k => {
+        document.getElementById(`btn-filter-${k}`).classList.remove('active');
+      });
+
+      activeRange = 'custom';
+      customDate = dateVal;
+      document.getElementById('date-range-sub').innerText = `Displaying: Date ${dateVal}`;
+      loadAdminMetrics();
+    }
+
+    async function loadAdminMetrics() {
+      const adminToken = sessionStorage.getItem('adminToken');
+      if (!adminToken) return;
+
+      let queryUrl = `${API_URL}/admin/metrics`;
+      if (activeRange === 'custom' && customDate) {
+        queryUrl += `?date=${encodeURIComponent(customDate)}`;
+      } else {
+        queryUrl += `?range=${encodeURIComponent(activeRange)}`;
+      }
+
+      try {
+        const res = await fetch(queryUrl, {
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+
+        if (res.status === 403) {
+          alert('Session expired or unauthorized. Please log in again.');
+          adminLogout();
+          return;
+        }
+
+        const data = await res.json();
+
+        let totalTokens = 0, totalWaiting = 0, totalCompleted = 0;
+        const branchLabels = [], branchWaiting = [], branchCompleted = [];
+
+        data.branches.forEach(b => {
+          totalTokens += parseInt(b.total_tokens || 0);
+          totalWaiting += parseInt(b.waiting_count || 0);
+          totalCompleted += parseInt(b.completed_count || 0);
+
+          branchLabels.push(b.hospital_branch.replace('City Hospital ', ''));
+          branchWaiting.push(b.waiting_count || 0);
+          branchCompleted.push(b.completed_count || 0);
+        });
+
+        document.getElementById('metric-total-tokens').innerText = totalTokens;
+        document.getElementById('metric-waiting-tokens').innerText = totalWaiting;
+        document.getElementById('metric-completed-tokens').innerText = totalCompleted;
+
+        let totalDocs = 0, availDocs = 0;
+        data.doctors.forEach(d => {
+          totalDocs += parseInt(d.total_doctors || 0);
+          availDocs += parseInt(d.available_doctors || 0);
+        });
+        const availRatio = totalDocs > 0 ? Math.round((availDocs / totalDocs) * 100) : 0;
+        document.getElementById('metric-doctor-avail').innerText = `${availRatio}%`;
+
+        renderBranchChart(branchLabels, branchWaiting, branchCompleted);
+        renderTriageChart(data.triage);
+        renderRosterTable(data.roster);
+
+      } catch (err) {
+        console.error('Failed to load admin metrics:', err);
+      }
+    }
+
+    function renderBranchChart(labels, waiting, completed) {
+      const ctx = document.getElementById('branchChart').getContext('2d');
+      if (branchChartInstance) branchChartInstance.destroy();
+
+      branchChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels.length ? labels : ['Main', 'Gomti Nagar', 'Aliganj', 'Indira Nagar', 'Charbagh'],
+          datasets: [
+            { label: 'Waiting', data: waiting.length ? waiting : [0, 0, 0, 0, 0], backgroundColor: '#f59e0b', borderRadius: 4 },
+            { label: 'Completed', data: completed.length ? completed : [0, 0, 0, 0, 0], backgroundColor: '#10b981', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
+        }
+      });
+    }
+
+    function renderTriageChart(triageData) {
+      const ctx = document.getElementById('triageChart').getContext('2d');
+      if (triageChartInstance) triageChartInstance.destroy();
+
+      const labels = triageData.map(t => t.priority || 'Regular');
+      const counts = triageData.map(t => t.count);
+
+      triageChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels.length ? labels : ['No Data'],
+          datasets: [{
+            data: counts.length ? counts : [1],
+            backgroundColor: counts.length ? ['#2563eb', '#f59e0b', '#dc2626'] : ['#e2e8f0']
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+      });
+    }
+
+    function renderRosterTable(roster) {
+      const tbody = document.getElementById('admin-roster-body');
+      tbody.innerHTML = '';
+
+      roster.forEach(doc => {
+        const isAvail = !!doc.is_available;
+        tbody.innerHTML += `
+          <tr style="border-bottom: 1px solid var(--border); font-size: 0.9rem;">
+            <td style="padding: 10px; font-weight: 600;">${doc.name}</td>
+            <td style="padding: 10px; color: var(--text-muted);">${doc.specialty}</td>
+            <td style="padding: 10px;">${doc.hospital_branch}</td>
+            <td style="padding: 10px;">
+              <span class="badge ${isAvail ? 'badge-regular' : 'badge-emergency'}" style="${isAvail ? 'background:#dcfce7; color:#166534;' : ''}">
+                ${isAvail ? '🟢 On Duty' : '🔴 Unavailable'}
+              </span>
+            </td>
+            <td style="padding: 10px; color: var(--text-muted);">${doc.unavailability_reason || '—'}</td>
+          </tr>
+        `;
+      });
+    }
+  </script>
+</body>
+
+</html>

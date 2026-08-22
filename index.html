@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>City Hospital OPD Live Queue Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <style>
+    .ticker-bar {
+      background: #fef2f2;
+      border-bottom: 1px solid #fca5a5;
+      overflow: hidden;
+      white-space: nowrap;
+      padding: 7px 0;
+    }
+
+    .ticker-track {
+      display: inline-block;
+      padding-left: 100%;
+      white-space: nowrap;
+      color: #dc2626;
+      font-weight: 600;
+      font-size: 0.85rem;
+      animation: ticker-scroll 20s linear infinite;
+    }
+
+    .ticker-bar:hover .ticker-track {
+      animation-play-state: paused;
+    }
+
+    @keyframes ticker-scroll {
+      0% {
+        transform: translateX(0);
+      }
+
+      100% {
+        transform: translateX(-100%);
+      }
+    }
+
+    .avail-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .avail-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .avail-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #dc2626;
+      transition: 0.2s;
+      border-radius: 24px;
+    }
+
+    .avail-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.2s;
+      border-radius: 50%;
+    }
+
+    .avail-switch input:checked+.avail-slider {
+      background-color: #16a34a;
+    }
+
+    .avail-switch input:checked+.avail-slider:before {
+      transform: translateX(20px);
+    }
+
+    .pass-card {
+      margin-top: 1.5rem;
+      border: 1px dashed var(--primary, #2563eb);
+      border-radius: 12px;
+      padding: 1.25rem;
+      background: #f8faff;
+      text-align: center;
+    }
+
+    .pass-card canvas {
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .pass-offline-note {
+      font-size: 0.75rem;
+      color: var(--text-muted, #64748b);
+      margin-top: 0.6rem;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="nav-container">
+      <div class="brand" onclick="goToHospitalSelect()">
+        <div class="brand-icon">Noline</div>
+        <div>
+          <h3>Smart Queue</h3>
+          <p style="font-size:0.7rem; color:var(--text-muted);" id="nav-brand-sub">Select Hospital</p>
+        </div>
+      </div>
+
+      <ul class="nav-links">
+        <li><a href="#" onclick="goToHospitalSelect()">Select Hospital</a></li>
+        <li><a href="#" onclick="viewMyLastPass(); return false;">🎫 View My Pass</a></li>
+        <li id="nav-desk-link"><a href="desk.html" target="_blank">📋 Walk-in
+            Desk</a></li>
+        <li id="nav-staff-tools" class="hidden"><a href="tv-display.html" target="_blank">📺 Public Display</a></li>
+        <li id="nav-staff-tools-2" class="hidden"><a href="kiosk.html" target="_blank">📷 Verify Pass</a></li>
+        <li id="nav-user-item" class="hidden"><span id="user-display-name"
+            style="font-weight: 600; font-size: 0.85rem;">-</span></li>
+        <li id="nav-logout-item" class="hidden"><button class="btn"
+            style="padding: 4px 10px; margin: 0; width: auto; font-size: 0.8rem; background: #f1f5f9;"
+            onclick="logout()">Logout</button></li>
+      </ul>
+
+      <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileNav()" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Moving doctor unavailability notice -->
+  <div id="unavailability-ticker" class="ticker-bar hidden">
+    <div class="ticker-track" id="ticker-track"></div>
+  </div>
+
+  <div class="container">
+
+    <!-- PAGE 1: 5 HOSPITAL BRANCHES -->
+    <div id="page-hospital-select">
+      <div class="card">
+        <h2 class="card-title">Select a Hospital Branch</h2>
+        <p class="card-subtitle">Pick your nearest branch to check live queue status and connect with a specialist.</p>
+
+        <div class="hospital-grid">
+          <div class="hospital-card">
+            <div>
+              <h3>City Hospital (Main Branch)</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Hazratganj, City Center</p>
+              <span class="wait-badge">5 Doctors Available Today</span>
+            </div>
+            <button class="btn btn-primary" style="margin-top: 1rem;"
+              onclick="selectHospital('City Hospital (Main Branch)')">Choose This Branch</button>
+          </div>
+
+          <div class="hospital-card">
+            <div>
+              <h3>City Hospital (Gomti Nagar)</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Sector 4, Gomti Nagar</p>
+              <span class="wait-badge">5 Doctors Available Today</span>
+            </div>
+            <button class="btn btn-primary" style="margin-top: 1rem;"
+              onclick="selectHospital('City Hospital (Gomti Nagar)')">Choose This Branch</button>
+          </div>
+
+          <div class="hospital-card">
+            <div>
+              <h3>City Hospital (Aliganj Wing)</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Kapoorthala, Aliganj</p>
+              <span class="wait-badge">5 Doctors Available Today</span>
+            </div>
+            <button class="btn btn-primary" style="margin-top: 1rem;"
+              onclick="selectHospital('City Hospital (Aliganj Wing)')">Choose This Branch</button>
+          </div>
+
+          <div class="hospital-card">
+            <div>
+              <h3>City Hospital (Indira Nagar)</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Block B, Indira Nagar</p>
+              <span class="wait-badge">5 Doctors Available Today</span>
+            </div>
+            <button class="btn btn-primary" style="margin-top: 1rem;"
+              onclick="selectHospital('City Hospital (Indira Nagar)')">Choose This Branch</button>
+          </div>
+
+          <div class="hospital-card">
+            <div>
+              <h3>City Hospital (Charbagh)</h3>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Station Road, Charbagh</p>
+              <span class="wait-badge">5 Doctors Available Today</span>
+            </div>
+            <button class="btn btn-primary" style="margin-top: 1rem;"
+              onclick="selectHospital('City Hospital (Charbagh)')">Choose This Branch</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 2: AUTHENTICATION -->
+    <div id="page-auth" class="hidden" style="max-width: 480px; margin: 0 auto;">
+      <div class="card">
+        <h2 class="card-title" id="auth-hospital-title" style="margin-bottom: 0.2rem;">City Hospital</h2>
+        <p style="font-size: 0.8rem; color: var(--primary); font-weight: 600; margin-bottom: 1rem;"
+          id="auth-branch-sub">Main Branch</p>
+
+        <div class="tab-group">
+          <button id="tab-login" class="tab-btn active" onclick="switchAuthTab('login')">Login</button>
+          <button id="tab-register" class="tab-btn" onclick="switchAuthTab('register')">New Patient?</button>
+        </div>
+
+        <form id="form-login" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label>Mobile Number</label>
+            <input type="text" id="login-id" placeholder="Enter your registered mobile number" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" placeholder="Example@123" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Sign In</button>
+        </form>
+
+        <form id="form-register" class="hidden" onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="reg-name" placeholder="Ramesh Kumar" required>
+          </div>
+          <div class="form-group">
+            <label>Mobile Number</label>
+            <input type="tel" id="reg-phone" placeholder="Enter a 10-digit number" required>
+          </div>
+          <div class="form-group">
+            <label>Set a Password</label>
+            <input type="password" id="reg-password" placeholder="Example@123" required minlength="4">
+          </div>
+          <div class="form-group">
+            <label>Patient Category</label>
+            <select id="reg-priority">
+              <option value="Regular">Regular Patient</option>
+              <option value="Senior Citizen">Senior Citizen (Age 60+)</option>
+              <option value="Emergency">Emergency 🚨</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">Register Now</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- PAGE 3: PATIENT DASHBOARD -->
+    <div id="page-patient-dashboard" class="hidden">
+      <div class="main-grid">
+        <div>
+          <div id="selection-card" class="card">
+            <h2 class="card-title">Choose Your Department</h2>
+            <p class="card-subtitle">Pick a counter below to see available doctors or grab your token.</p>
+
+            <div class="services-grid">
+              <div class="service-card" onclick="selectService(1, 'Doctor Consultation', this)">
+                <h4 style="margin-bottom: 4px;">Doctor Consultation</h4>
+                <p style="font-size:0.75rem; color:var(--text-muted);">Counter 3 | ~12 min/pt</p>
+              </div>
+              <div class="service-card" onclick="selectService(2, 'Blood Test / Pathology', this)">
+                <h4 style="margin-bottom: 4px;">Blood Test / Pathology</h4>
+                <p style="font-size:0.75rem; color:var(--text-muted);">Counter 1 | ~8 min/pt</p>
+              </div>
+              <div class="service-card" onclick="selectService(3, 'Medicine Collection', this)">
+                <h4 style="margin-bottom: 4px;">Medicine Collection</h4>
+                <p style="font-size:0.75rem; color:var(--text-muted);">Counter 2 | ~5 min/pt</p>
+              </div>
+              <div class="service-card" onclick="selectService(4, 'Billing & Registration', this)">
+                <h4 style="margin-bottom: 4px;">Billing & Registration</h4>
+                <p style="font-size:0.75rem; color:var(--text-muted);">Counter 4 | ~6 min/pt</p>
+              </div>
+            </div>
+
+            <div id="doctor-select-wrapper" class="form-group hidden"
+              style="margin-top: 1rem; background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+              <label style="color: var(--primary); font-weight: bold;">🩺 Choose Your Doctor <span
+                  style="color:red;">*</span></label>
+              <select id="patient-doctor-select" required onchange="validateDoctorSelection()">
+                <option value="">-- Choose a Doctor --</option>
+              </select>
+            </div>
+
+            <button id="generate-btn" class="btn btn-primary" disabled onclick="generateToken()">Get My Digital
+              Token</button>
+          </div>
+
+          <div id="queue-card" class="card hidden">
+            <h2 id="active-service-name" class="card-title">Doctor Consultation</h2>
+            <p id="active-branch-name" style="font-size:0.85rem; color:var(--text-muted); margin-bottom: 1rem;">City
+              Hospital</p>
+
+            <div class="token-display">
+              <div style="border-right: 1px solid var(--border);">
+                <p style="font-size:0.7rem; color:var(--text-muted); font-weight:bold;">TOKEN NUMBER</p>
+                <div class="token-number">A101</div>
+              </div>
+              <div style="border-right: 1px solid var(--border);">
+                <p style="font-size:0.7rem; color:var(--text-muted); font-weight:bold;">AHEAD OF YOU</p>
+                <div id="people-ahead-text" style="font-size: 2rem; font-weight: 700; margin-top: 0.3rem;">0</div>
+              </div>
+              <div>
+                <p style="font-size:0.7rem; color:var(--primary); font-weight:bold;">🤖 SMART WAIT ESTIMATE</p>
+                <div id="est-wait-text"
+                  style="font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-top: 0.3rem;">~0 mins</div>
+              </div>
+            </div>
+            <p style="font-size:0.8rem; color:var(--text-muted); text-align:center;">📲 We will text you the moment your
+              token is called!</p>
+
+            <div id="token-pass-card" class="pass-card hidden">
+              <p style="font-weight:700; color:var(--primary); margin-bottom:0.75rem;">🎫 Offline Token Pass</p>
+              <canvas id="pass-qr-canvas" width="180" height="180"></canvas>
+              <p style="font-weight:800; font-size:1.4rem; margin-top:0.6rem;" id="pass-token-number">A101</p>
+              <p style="font-size:0.8rem; color:var(--text-muted);" id="pass-service-line">Doctor Consultation · Counter
+                3</p>
+              <button class="btn btn-primary" style="margin-top:0.75rem;" onclick="downloadTokenPass()">⬇️ Save My
+                Pass</button>
+              <p class="pass-offline-note">Grab a screenshot or download it now while you still have signal. Works
+                offline at counter checkpoints.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 4: STAFF & DOCTOR DASHBOARD -->
+    <div id="page-doctor-dashboard" class="hidden">
+      <div class="card">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <h2 id="doc-welcome-title">Staff Dashboard</h2>
+            <p id="doc-branch-sub" style="font-size: 0.85rem; color: var(--primary); font-weight: 600;">Main Branch</p>
+          </div>
+
+          <div id="locked-counter-badge"
+            style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; font-weight: 700; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem;">
+            🏢 Counter 4 — Billing & Registration
+          </div>
+        </div>
+
+        <div
+          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="margin:0; padding: 1rem; text-align: center; background: #eff6ff;">
+            <p style="font-size:0.75rem; font-weight:bold; color:var(--text-muted);">TOKENS ISSUED</p>
+            <div id="stat-total-tokens" style="font-size: 2.2rem; font-weight: 900; color: var(--primary);">0</div>
+          </div>
+          <div class="card"
+            style="margin:0; padding: 1rem; text-align: center; background: #fef2f2; border-color: #fca5a5;">
+            <p style="font-size:0.75rem; font-weight:bold; color:#dc2626;">EMERGENCY 🚨</p>
+            <div id="stat-emergency-count" style="font-size: 2.2rem; font-weight: 900; color: #dc2626;">0</div>
+          </div>
+          <div class="card"
+            style="margin:0; padding: 1rem; text-align: center; background: #fffbeb; border-color: #fcd34d;">
+            <p style="font-size:0.75rem; font-weight:bold; color:#d97706;">SENIOR CITIZENS 👵</p>
+            <div id="stat-senior-count" style="font-size: 2.2rem; font-weight: 900; color: #d97706;">0</div>
+          </div>
+        </div>
+
+        <div class="doctor-queue-layout">
+          <div class="card" style="background: #f8fafc; text-align: center;">
+            <p style="font-size:0.8rem; font-weight:bold; color:var(--text-muted);">NOW SERVING</p>
+            <div id="current-called-token"
+              style="font-size: 3.5rem; font-weight: 900; color: var(--primary); margin: 0.5rem 0;">--</div>
+            <p id="current-patient-name" style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.8rem;">Nobody
+              Called Yet</p>
+
+            <button class="btn btn-primary" onclick="callNextToken()">📢 Call Next Patient</button>
+
+            <div id="doctor-prescribe-box"
+              style="background: #ffffff; border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem; margin: 0.8rem 0; text-align: left;">
+              <p
+                style="font-size: 0.78rem; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 0.4rem;">
+                🔗 Chained Prescriptions</p>
+              <label
+                style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-bottom: 4px; cursor: pointer;">
+                <input type="checkbox" id="chain-prescribe-lab"> Prescribe Lab / Blood Work
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer;">
+                <input type="checkbox" id="chain-prescribe-pharm"> Prescribe Pharmacy Pickup
+              </label>
+            </div>
+
+            <button class="btn btn-dark" onclick="markCurrentCompleted()">✅ Finish Consultation</button>
+            <button class="btn" style="background:#fef2f2; color:#dc2626; border:1px solid #fca5a5; margin-top: 0.5rem;"
+              onclick="markCurrentNoShow()">🚫 Mark No-Show</button>
+          </div>
+
+          <div>
+            <h3>Patients in Queue</h3>
+            <table style="width: 100%; border-collapse: collapse; text-align: left; margin-top: 0.5rem;">
+              <thead>
+                <tr style="border-bottom: 2px solid var(--border); font-size: 0.85rem; color: var(--text-muted);">
+                  <th style="padding: 8px;">Token</th>
+                  <th style="padding: 8px;">Patient Name</th>
+                  <th style="padding: 8px;">Category</th>
+                  <th style="padding: 8px;">Status</th>
+                </tr>
+              </thead>
+              <tbody id="doctor-queue-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 1.5rem;">
+          <h3>🩺 Set Your Availability</h3>
+          <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom: 1rem;">Flip the switch below to update
+            your status.</p>
+
+          <div style="display:flex; align-items:center; gap: 1rem; flex-wrap: wrap;">
+            <label class="avail-switch">
+              <input type="checkbox" id="doctor-availability-toggle" checked onchange="toggleAvailabilityUI()">
+              <span class="avail-slider"></span>
+            </label>
+            <span id="availability-status-label" style="font-weight:700; color:#16a34a;">Available</span>
+            <input type="text" id="unavailability-reason-input"
+              placeholder="Why unavailable? (e.g. On Leave, In Surgery)" class="hidden"
+              style="flex:1; min-width:200px; padding:0.5rem; border-radius:8px; border:1px solid var(--border);">
+            <button class="btn btn-primary" style="margin:0; width: auto;" onclick="saveAvailability()">Update
+              Status</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 2rem; margin-bottom: 0;">
+          <h3>📊 Patient Flow Insights</h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Patients registered by hour,
+            today</p>
+          <canvas id="crowdChart" style="max-height: 220px;"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <div class="footer-brand-row">
+          <div class="brand-icon">OnLine</div>
+          <h4>Smart Queue</h4>
+        </div>
+        <p class="footer-tagline">
+          Live OPD queue status, digital tokens, and offline-capable passes for City Hospital branches — eliminating
+          waiting room bottlenecks.
+        </p>
+      </div>
+
+      <div class="footer-col">
+        <h5>Quick Links</h5>
+        <ul>
+          <li><a href="#" onclick="goToHospitalSelect(); return false;">Select Hospital</a></li>
+          <li><a href="#" onclick="viewMyLastPass(); return false;">🎫 View My Pass</a></li>
+          <li><a href="desk.html" target="_blank">📋 Walk-in Desk</a></li>
+          <li><a href="kiosk.html" target="_blank">📷 Kiosk Scanner</a></li>
+          <li><a href="tv-display.html" target="_blank">📺 Public Display</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col">
+        <h5>Branches</h5>
+        <ul>
+          <li><span onclick="selectHospital('City Hospital (Main Branch)')">Hazratganj (Main)</span></li>
+          <li><span onclick="selectHospital('City Hospital (Gomti Nagar)')">Gomti Nagar</span></li>
+          <li><span onclick="selectHospital('City Hospital (Aliganj Wing)')">Aliganj Wing</span></li>
+          <li><span onclick="selectHospital('City Hospital (Indira Nagar)')">Indira Nagar</span></li>
+          <li><span onclick="selectHospital('City Hospital (Charbagh)')">Charbagh</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2026 City Hospital Smart Queue. Built for faster, fairer OPD healthcare.
+    </div>
+  </footer>
+
+  <script>
+    const API_URL = window.location.origin + "/api";
+    let selectedBranch = "City Hospital (Main Branch)";
+    let selectedServiceId = null, selectedServiceName = "";
+    let authToken = localStorage.getItem("token") || null;
+    let userRole = localStorage.getItem("userRole") || null;
+    let currentUserId = localStorage.getItem("userId") || null;
+    let currentActiveTokenId = null;
+    let chartInstance = null;
+
+    if (authToken && userRole === 'Doctor') {
+      showDoctorDashboard(localStorage.getItem("userName") || "Staff Member", localStorage.getItem("doctorBranch") || "");
+    }
+
+    function toggleMobileNav() {
+      document.getElementById('nav-hamburger').classList.toggle('open');
+      document.querySelector('.nav-links').classList.toggle('mobile-open');
+    }
+
+    function goToHospitalSelect() {
+      document.getElementById('page-hospital-select').classList.remove('hidden');
+      document.getElementById('page-auth').classList.add('hidden');
+      document.getElementById('page-patient-dashboard').classList.add('hidden');
+      document.getElementById('page-doctor-dashboard').classList.add('hidden');
+    }
+
+    function selectHospital(branchName) {
+      selectedBranch = branchName;
+      document.getElementById('auth-hospital-title').innerText = branchName;
+      document.getElementById('auth-branch-sub').innerText = branchName;
+      document.getElementById('nav-brand-sub').innerText = branchName;
+      document.getElementById('page-hospital-select').classList.add('hidden');
+      document.getElementById('page-auth').classList.remove('hidden');
+      loadBranchDoctors(branchName);
+    }
+
+    async function loadBranchDoctors(branchName) {
+      const select = document.getElementById('patient-doctor-select');
+      select.innerHTML = '<option value="">-- Fetching Doctors... --</option>';
+
+      try {
+        const res = await fetch(`${API_URL}/doctors/branch?branch=${encodeURIComponent(branchName)}`);
+        const doctors = await res.json();
+
+        if (doctors && doctors.length > 0) {
+          select.innerHTML = '<option value="">-- Choose a Doctor --</option>';
+          doctors.forEach(doc => {
+            if (doc.is_available) {
+              select.innerHTML += `<option value="${doc.staff_id}">${doc.name} (${doc.specialty})</option>`;
+            } else {
+              const reason = doc.unavailability_reason ? ` — ${doc.unavailability_reason}` : '';
+              select.innerHTML += `<option value="${doc.staff_id}" disabled style="color:#94a3b8;">🚫 ${doc.name} (${doc.specialty}) — Unavailable${reason}</option>`;
+            }
+          });
+        } else {
+          select.innerHTML = '<option value="">No doctors posted at this branch right now</option>';
+        }
+
+        updateUnavailabilityTicker(doctors || []);
+      } catch (e) {
+        console.error("Error loading doctors:", e);
+        select.innerHTML = '<option value="">Could not load the doctors list</option>';
+      }
+    }
+
+    function updateUnavailabilityTicker(doctors) {
+      const ticker = document.getElementById('unavailability-ticker');
+      const track = document.getElementById('ticker-track');
+      const unavailable = doctors.filter(d => !d.is_available);
+
+      if (unavailable.length === 0) {
+        ticker.classList.add('hidden');
+        track.innerText = '';
+        return;
+      }
+
+      const messages = unavailable.map(d =>
+        `🚨 ${d.name} (${d.specialty}) is currently unavailable${d.unavailability_reason ? ' — ' + d.unavailability_reason : ''}.`
+      );
+      track.innerText = messages.join('   •   ');
+      ticker.classList.remove('hidden');
+    }
+
+    function toggleAvailabilityUI() {
+      const isAvailable = document.getElementById('doctor-availability-toggle').checked;
+      const label = document.getElementById('availability-status-label');
+      const reasonInput = document.getElementById('unavailability-reason-input');
+
+      if (isAvailable) {
+        label.innerText = 'Available';
+        label.style.color = '#16a34a';
+        reasonInput.classList.add('hidden');
+      } else {
+        label.innerText = 'Unavailable';
+        label.style.color = '#dc2626';
+        reasonInput.classList.remove('hidden');
+      }
+    }
+
+    async function saveAvailability() {
+      const isAvailable = document.getElementById('doctor-availability-toggle').checked;
+      const reason = document.getElementById('unavailability-reason-input').value.trim();
+
+      if (!isAvailable && !reason) {
+        alert("Let patients know why you are unavailable (e.g. On Leave, In Surgery).");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/doctor/availability`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify({ isAvailable, reason: isAvailable ? null : reason })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          alert(data.message);
+        } else {
+          alert(data.error || "Could not update your status. Please try again.");
+        }
+      } catch (e) {
+        console.error('Error updating availability:', e);
+        alert("Could not update your status. Please try again.");
+      }
+    }
+
+    async function loadMyAvailability() {
+      try {
+        const branch = localStorage.getItem('doctorBranch') || selectedBranch;
+        const res = await fetch(`${API_URL}/doctors/branch?branch=${encodeURIComponent(branch)}`);
+        const doctors = await res.json();
+        const me = (doctors || []).find(d => String(d.staff_id) === String(currentUserId));
+
+        const toggle = document.getElementById('doctor-availability-toggle');
+        const reasonInput = document.getElementById('unavailability-reason-input');
+
+        if (me) {
+          toggle.checked = !!me.is_available;
+          reasonInput.value = me.unavailability_reason || '';
+        }
+        toggleAvailabilityUI();
+      } catch (e) {
+        console.error('Error loading my availability status:', e);
+      }
+    }
+
+    function switchAuthTab(tab) {
+      document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+      document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+      document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+      document.getElementById('form-register').classList.toggle('hidden', tab !== 'register');
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const phone = document.getElementById('login-id').value;
+      const password = document.getElementById('login-password').value;
+
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password, hospitalBranch: selectedBranch })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        authToken = data.token;
+        userRole = data.role;
+        currentUserId = data.user.id;
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userRole", data.role);
+        localStorage.setItem("userId", data.user.id);
+        localStorage.setItem("userName", data.user.name);
+
+        if (data.role === 'Doctor') {
+          localStorage.setItem("doctorBranch", data.user.branch);
+          localStorage.setItem("staffDepartmentId", data.user.departmentId || 1);
+          localStorage.setItem("staffServiceName", data.user.serviceName || "Doctor Consultation");
+          localStorage.setItem("staffCounterNumber", data.user.counterNumber || "Counter 3");
+          showDoctorDashboard(data.user.name, data.user.branch);
+        } else {
+          showPatientDashboard(data.user.name);
+        }
+      } else alert(data.error);
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('reg-name').value,
+        phone: document.getElementById('reg-phone').value,
+        password: document.getElementById('reg-password').value,
+        priority: document.getElementById('reg-priority').value
+      };
+
+      const res = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        authToken = data.token;
+        userRole = 'Patient';
+        currentUserId = data.user.id;
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userRole", 'Patient');
+        localStorage.setItem("userId", data.user.id);
+        localStorage.setItem("userName", data.user.name);
+        showPatientDashboard(data.user.name);
+      } else alert(data.error);
+    }
+
+    function showPatientDashboard(name) {
+      document.getElementById('user-display-name').innerText = name;
+      document.getElementById('nav-user-item').classList.remove('hidden');
+      document.getElementById('nav-logout-item').classList.remove('hidden');
+      document.getElementById('nav-staff-tools').classList.add('hidden');
+      document.getElementById('nav-staff-tools-2').classList.add('hidden');
+
+      document.getElementById('page-auth').classList.add('hidden');
+      document.getElementById('page-patient-dashboard').classList.remove('hidden');
+      loadBranchDoctors(selectedBranch);
+    }
+
+    function showDoctorDashboard(name, branch) {
+      const departmentId = parseInt(localStorage.getItem("staffDepartmentId") || 1);
+      const serviceName = localStorage.getItem("staffServiceName") || "Doctor Consultation";
+      const counterNumber = localStorage.getItem("staffCounterNumber") || "Counter 3";
+
+      document.getElementById('user-display-name').innerText = name;
+      document.getElementById('doc-welcome-title').innerText = `${name}`;
+      document.getElementById('doc-branch-sub').innerText = `Assigned to: ${serviceName} | ${branch || selectedBranch}`;
+
+      document.getElementById('locked-counter-badge').innerText = `🏢 ${counterNumber} — ${serviceName}`;
+
+      const prescribeBox = document.getElementById('doctor-prescribe-box');
+      if (departmentId === 1) {
+        prescribeBox.classList.remove('hidden');
+      } else {
+        prescribeBox.classList.add('hidden');
+      }
+
+      document.getElementById('nav-user-item').classList.remove('hidden');
+      document.getElementById('nav-logout-item').classList.remove('hidden');
+      document.getElementById('nav-staff-tools').classList.remove('hidden');
+      document.getElementById('nav-staff-tools-2').classList.remove('hidden');
+
+      document.getElementById('page-auth').classList.add('hidden');
+      document.getElementById('page-hospital-select').classList.add('hidden');
+      document.getElementById('page-doctor-dashboard').classList.remove('hidden');
+
+      loadDoctorQueue();
+      loadCrowdChart();
+      loadMyAvailability();
+    }
+
+    function logout() { localStorage.clear(); location.reload(); }
+
+    function selectService(id, name, el) {
+      selectedServiceId = id;
+      selectedServiceName = name;
+      document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+
+      const docWrapper = document.getElementById('doctor-select-wrapper');
+
+      if (id === 1) {
+        docWrapper.classList.remove('hidden');
+        loadBranchDoctors(selectedBranch);
+        validateDoctorSelection();
+      } else {
+        docWrapper.classList.add('hidden');
+        document.getElementById('generate-btn').disabled = false;
+      }
+    }
+
+    function validateDoctorSelection() {
+      const docSelect = document.getElementById('patient-doctor-select');
+      const genBtn = document.getElementById('generate-btn');
+      if (selectedServiceId === 1) {
+        genBtn.disabled = !docSelect.value;
+      }
+    }
+
+    async function generateToken() {
+      const selectedStaffId = document.getElementById('patient-doctor-select').value;
+
+      if (selectedServiceId === 1 && !selectedStaffId) {
+        alert("Pick a doctor first, then we can generate your token!");
+        return;
+      }
+
+      const res = await fetch(`${API_URL}/tokens/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceName: selectedServiceName,
+          userId: currentUserId,
+          hospitalBranch: selectedBranch,
+          staffId: selectedStaffId || null
+        })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        document.getElementById('active-service-name').innerText = data.serviceName;
+        document.getElementById('active-branch-name').innerText = selectedBranch;
+        document.querySelector('.token-number').innerText = data.tokenNumber;
+        document.getElementById('people-ahead-text').innerText = data.peopleAhead;
+        document.getElementById('est-wait-text').innerText = `~${data.estimatedWaitMins} mins`;
+        document.getElementById('selection-card').classList.add('hidden');
+        document.getElementById('queue-card').classList.remove('hidden');
+
+        renderTokenPass({
+          tokenId: data.tokenId,
+          tokenNumber: data.tokenNumber,
+          passHash: data.passHash,
+          generatedAt: data.generatedAt,
+          serviceName: data.serviceName,
+          counter: data.counter,
+          hospitalBranch: data.hospitalBranch
+        });
+      } else {
+        alert(data.error);
+      }
+    }
+
+    function renderTokenPass(pass) {
+      localStorage.setItem('myTokenPass', JSON.stringify(pass));
+
+      document.getElementById('pass-token-number').innerText = pass.tokenNumber;
+      document.getElementById('pass-service-line').innerText = `${pass.serviceName} · ${pass.counter}`;
+
+      const payload = JSON.stringify({
+        tokenId: pass.tokenId,
+        tokenNumber: pass.tokenNumber,
+        passHash: pass.passHash,
+        generatedAt: pass.generatedAt
+      });
+
+      const canvas = document.getElementById('pass-qr-canvas');
+      if (window.QRCode && canvas) {
+        QRCode.toCanvas(canvas, payload, { width: 180, margin: 1 }, (err) => {
+          if (err) {
+            console.error('QR render error:', err);
+            drawQrFallback(canvas);
+          }
+        });
+      } else if (canvas) {
+        drawQrFallback(canvas);
+      }
+
+      document.getElementById('token-pass-card').classList.remove('hidden');
+    }
+
+    function drawQrFallback(canvas) {
+      const ctx = canvas.getContext('2d');
+      canvas.width = 180;
+      canvas.height = 180;
+      ctx.fillStyle = '#fef2f2';
+      ctx.fillRect(0, 0, 180, 180);
+      ctx.fillStyle = '#dc2626';
+      ctx.font = '13px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('QR unavailable —', 90, 80);
+      ctx.fillText('check your connection,', 90, 100);
+      ctx.fillText('then reload the page.', 90, 120);
+    }
+
+    function downloadTokenPass() {
+      const passRaw = localStorage.getItem('myTokenPass');
+      if (!passRaw) return;
+      const pass = JSON.parse(passRaw);
+      const qrCanvas = document.getElementById('pass-qr-canvas');
+
+      const out = document.createElement('canvas');
+      out.width = 420;
+      out.height = 620;
+      const ctx = out.getContext('2d');
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, out.width, out.height);
+      ctx.fillStyle = '#2563eb';
+      ctx.fillRect(0, 0, out.width, 90);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('City Hospital — Digital Token Pass', out.width / 2, 52);
+
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 64px Arial';
+      ctx.fillText(pass.tokenNumber, out.width / 2, 200);
+
+      ctx.font = '18px Arial';
+      ctx.fillStyle = '#334155';
+      ctx.fillText(pass.serviceName || '', out.width / 2, 240);
+      ctx.fillText(pass.counter || '', out.width / 2, 266);
+      ctx.fillText(pass.hospitalBranch || '', out.width / 2, 292);
+
+      if (qrCanvas) {
+        ctx.drawImage(qrCanvas, (out.width - 220) / 2, 320, 220, 220);
+      }
+
+      ctx.font = '13px Arial';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('Show this at the counter or kiosk — works offline once saved.', out.width / 2, 580);
+
+      const link = document.createElement('a');
+      link.download = `token-pass-${pass.tokenNumber}.png`;
+      link.href = out.toDataURL('image/png');
+      link.click();
+    }
+
+    function viewMyLastPass() {
+      const passRaw = localStorage.getItem('myTokenPass');
+      if (!passRaw) {
+        alert("No saved pass found on this device yet, generate a token first while you have signal.");
+        return;
+      }
+      const pass = JSON.parse(passRaw);
+      const payload = JSON.stringify({
+        tokenId: pass.tokenId,
+        tokenNumber: pass.tokenNumber,
+        passHash: pass.passHash,
+        generatedAt: pass.generatedAt
+      });
+
+      const ageSeconds = pass.generatedAt ? (Math.floor(Date.now() / 1000) - pass.generatedAt) : 0;
+      const isExpired = ageSeconds > 24 * 60 * 60;
+      const expiryNote = isExpired
+        ? `<p style="font-size:0.75rem; color:#dc2626; font-weight:600; margin-top:0.5rem;">⚠️ This pass is over 24 hours old and will no longer scan as valid. Generate a new token.</p>`
+        : '';
+
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;';
+      overlay.innerHTML = `
+        <div class="pass-card" style="background:white;max-width:320px;width:90%;">
+          <p style="font-weight:700; color:var(--primary); margin-bottom:0.75rem;">🎫 Offline Token Pass</p>
+          <canvas id="modal-pass-qr" width="180" height="180"></canvas>
+          <p style="font-weight:800; font-size:1.4rem; margin-top:0.6rem;">${pass.tokenNumber}</p>
+          <p style="font-size:0.8rem; color:var(--text-muted);">${pass.serviceName || ''} · ${pass.counter || ''}</p>
+          ${expiryNote}
+          <button class="btn btn-primary" style="margin-top:0.75rem;" id="modal-pass-close">Close</button>
+        </div>`;
+      document.body.appendChild(overlay);
+
+      if (window.QRCode) {
+        QRCode.toCanvas(document.getElementById('modal-pass-qr'), payload, { width: 180, margin: 1 }, (err) => {
+          if (err) drawQrFallback(document.getElementById('modal-pass-qr'));
+        });
+      } else {
+        drawQrFallback(document.getElementById('modal-pass-qr'));
+      }
+      document.getElementById('modal-pass-close').onclick = () => overlay.remove();
+      overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    }
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch((err) => console.log('SW registration failed:', err));
+      });
+    }
+
+    async function loadDoctorQueue() {
+      const serviceId = localStorage.getItem("staffDepartmentId") || 1;
+      const res = await fetch(`${API_URL}/doctor/queue/${serviceId}`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const data = await res.json();
+
+      document.getElementById('stat-total-tokens').innerText = data.totalIssued;
+      let emergencyCount = 0, seniorCount = 0;
+      const tbody = document.getElementById('doctor-queue-table-body');
+      tbody.innerHTML = '';
+
+      let called = data.tokens.find(t => t.status === 'Called');
+      if (called) {
+        document.getElementById('current-called-token').innerText = called.token_number;
+        document.getElementById('current-patient-name').innerText = `${called.name || 'Patient'} (${called.priority || 'Regular'})`;
+        currentActiveTokenId = called.token_id;
+      } else {
+        document.getElementById('current-called-token').innerText = '--';
+        document.getElementById('current-patient-name').innerText = 'No Active Patient';
+        currentActiveTokenId = null;
+      }
+
+      data.tokens.filter(t => t.status === 'Waiting').forEach(t => {
+        if (t.priority === 'Emergency') emergencyCount++;
+        if (t.priority === 'Senior Citizen') seniorCount++;
+
+        tbody.innerHTML += `
+          <tr style="border-bottom: 1px solid var(--border); font-size: 0.9rem;">
+            <td style="padding: 8px; font-weight: bold;">${t.token_number}</td>
+            <td style="padding: 8px;">${t.name || 'Patient'}</td>
+            <td style="padding: 8px;"><span class="badge ${t.priority === 'Emergency' ? 'badge-emergency' : 'badge-regular'}">${t.priority || 'Regular'}</span></td>
+            <td style="padding: 8px;">${t.status}</td>
+          </tr>
+        `;
+      });
+
+      document.getElementById('stat-emergency-count').innerText = emergencyCount;
+      document.getElementById('stat-senior-count').innerText = seniorCount;
+    }
+
+    async function loadCrowdChart() {
+      const res = await fetch(`${API_URL}/doctor/analytics/crowd`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const analyticsData = await res.json();
+
+      const hours = analyticsData.map(d => `${d.hour}:00`);
+      const counts = analyticsData.map(d => d.count);
+
+      const ctx = document.getElementById('crowdChart').getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: hours.length ? hours : ['9:00', '10:00', '11:00', '12:00', '13:00'],
+          datasets: [{
+            label: 'Patients Registered',
+            data: counts.length ? counts : [8, 15, 24, 18, 10],
+            backgroundColor: '#2563eb',
+            borderRadius: 6
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+      });
+    }
+
+    async function callNextToken() {
+      const serviceId = localStorage.getItem("staffDepartmentId") || 1;
+      const res = await fetch(`${API_URL}/doctor/queue/${serviceId}`, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      const data = await res.json();
+      const nextWaiting = data.tokens.find(t => t.status === 'Waiting');
+
+      if (!nextWaiting) return alert("No one is waiting right now.");
+      await updateTokenStatus(nextWaiting.token_id, 'Called');
+    }
+
+    async function markCurrentCompleted() {
+      if (!currentActiveTokenId) return alert("No patient is currently being served.");
+
+      const departmentId = parseInt(localStorage.getItem("staffDepartmentId") || 1);
+
+      if (departmentId === 1) {
+        const prescribeLab = document.getElementById('chain-prescribe-lab').checked;
+        const prescribePharmacy = document.getElementById('chain-prescribe-pharm').checked;
+
+        try {
+          const res = await fetch(`${API_URL}/doctor/tokens/${currentActiveTokenId}/chain-prescribe`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({ prescribeLab, prescribePharmacy })
+          });
+          const data = await res.json();
+
+          if (res.ok) {
+            document.getElementById('chain-prescribe-lab').checked = false;
+            document.getElementById('chain-prescribe-pharm').checked = false;
+
+            let msg = data.message;
+            if (data.chainedTokens && data.chainedTokens.length > 0) {
+              msg += "\n\nGenerated Sub-Tokens:\n" + data.chainedTokens.map(t => `• ${t.service}: Token ${t.tokenNumber} (~${t.estimatedWait} mins)`).join('\n');
+            }
+            alert(msg);
+
+            loadDoctorQueue();
+            loadCrowdChart();
+          } else {
+            alert(data.error || 'Failed to complete consultation.');
+          }
+        } catch (err) {
+          alert('Server error completing consultation.');
+        }
+      } else {
+        await updateTokenStatus(currentActiveTokenId, 'Completed');
+      }
+    }
+
+    async function markCurrentNoShow() {
+      if (!currentActiveTokenId) return alert("No patient is currently being served.");
+      if (!confirm("Mark this patient as a no-show? They'll be removed from the active queue.")) return;
+      await updateTokenStatus(currentActiveTokenId, 'Cancelled');
+    }
+
+    async function updateTokenStatus(tokenId, newStatus) {
+      await fetch(`${API_URL}/doctor/tokens/${tokenId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify({ status: newStatus })
+      });
+      loadDoctorQueue();
+      loadCrowdChart();
+    }
+  </script>
+</body>
+
+</html>

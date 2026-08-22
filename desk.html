@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline Walk-in Registration Desk — Smart Queue</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .desk-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .desk-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .print-preview-box {
+            border: 1px dashed var(--primary);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            text-align: center;
+            background: var(--primary-light);
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="nav-container">
+            <div class="brand" onclick="window.location.href='index.html'">
+                <div class="brand-icon">NoLine</div>
+                <div>
+                    <h3>Smart Queue</h3>
+                    <p style="font-size:0.7rem; color:var(--text-muted);" id="desk-branch-name">City Hospital (Main
+                        Branch)</p>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">← Patient Portal</a></li>
+                <li><a href="tv-display.html" target="_blank">📺 Public Display</a></li>
+                <li id="desk-logout-item" class="hidden"><button class="btn"
+                        style="padding: 4px 10px; width: auto; font-size: 0.8rem; background: #f1f5f9;"
+                        onclick="deskLogout()">Logout</button></li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- 1. Dedicated Desk Login Gate -->
+    <section id="desk-auth-view" style="max-width: 440px; margin: 3.5rem auto; padding: 0 1.25rem;">
+        <div class="card">
+            <h2 class="card-title" style="margin-bottom: 0.2rem;">Reception Desk Login</h2>
+            <p class="card-subtitle">Sign in with your desk staff credentials to issue walk-in tokens.</p>
+
+            <form onsubmit="handleDeskLogin(event)">
+                <div class="form-group">
+                    <label>Staff Mobile Number</label>
+                    <input type="tel" id="desk-login-phone" placeholder="1234567890" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="desk-login-password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Authenticate Desk Access</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- 2. Protected Desk Console (Revealed only after login) -->
+    <main id="desk-dashboard-view" class="container hidden" style="margin-top: 1.5rem;">
+
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+                <h2 class="card-title" style="margin-bottom: 0.2rem;" id="desk-staff-welcome">Offline Patient Token
+                    Generation</h2>
+                <p class="card-subtitle" style="margin-bottom: 0;">Issue instant tokens for walk-in patients directly
+                    into today's live queue.</p>
+            </div>
+            <div
+                style="background: var(--primary-light); border: 1px solid var(--primary-border); color: var(--primary); padding: 8px 16px; border-radius: var(--radius-sm); font-weight: 700; font-size: 0.85rem;">
+                🏢 Walk-in Registration Desk
+            </div>
+        </div>
+
+        <div class="desk-grid">
+            <!-- Left Form: Patient Input -->
+            <div class="card" style="margin:0;">
+                <h3 class="card-title" style="font-size: 1.15rem; margin-bottom: 0.3rem;">Patient Details</h3>
+                <p class="card-subtitle" style="margin-bottom: 1.2rem;">Fill in the patient's information to generate
+                    their token slip.</p>
+
+                <form id="desk-walkin-form" onsubmit="handleDeskWalkinSubmit(event)">
+                    <div class="form-group">
+                        <label>Patient Full Name <span style="color:var(--danger);">*</span></label>
+                        <input type="text" id="desk-patient-name" placeholder="e.g. Ramesh Kumar" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Mobile Number (Optional for SMS Alerts)</label>
+                        <input type="tel" id="desk-patient-phone" placeholder="10-digit number" maxlength="10">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Triage Priority Tier</label>
+                        <select id="desk-patient-priority">
+                            <option value="Regular">Regular Patient</option>
+                            <option value="Senior Citizen">Senior Citizen (Age 60+)</option>
+                            <option value="Emergency">Emergency 🚨</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Target Department / Counter <span style="color:var(--danger);">*</span></label>
+                        <select id="desk-target-service" onchange="handleDeskServiceChange()">
+                            <option value="1">Counter 3 — Doctor Consultation</option>
+                            <option value="2">Counter 1 — Blood Test / Pathology</option>
+                            <option value="3">Counter 2 — Medicine Collection (Pharmacy)</option>
+                            <option value="4">Counter 4 — Billing & Cashier Desk</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="desk-doctor-wrapper">
+                        <label>Assigned Specialist <span style="color:var(--danger);">*</span></label>
+                        <select id="desk-doctor-select">
+                            <option value="">-- Fetching Available Doctors... --</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="font-size: 0.95rem; padding: 0.85rem;">
+                        Get Digital Token Slip
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right Column: Slip Preview & Quick Actions -->
+            <div>
+                <div class="card" style="margin: 0 0 1.25rem 0;">
+                    <h3 class="card-title" style="font-size: 1.15rem;">Last Issued Token Slip</h3>
+                    <p class="card-subtitle" style="margin-bottom: 1rem;">Receipt generated for the latest registered
+                        patient.</p>
+
+                    <div class="print-preview-box" id="last-slip-preview">
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">No tokens issued in this session yet.
+                        </p>
+                    </div>
+
+                    <button id="reprint-btn" class="btn btn-dark hidden" style="margin-top: 1rem;"
+                        onclick="reprintLastSlip()">
+                        Re-Print Last Slip
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="footer-brand-row">
+                    <div class="brand-icon">OnLine</div>
+                    <h4>Smart Queue</h4>
+                </div>
+                <p class="footer-tagline">
+                    Live OPD queue status, digital tokens, and offline-capable passes for City Hospital branches —
+                    eliminating waiting room bottlenecks.
+                </p>
+            </div>
+
+            <div class="footer-col">
+                <h5>Quick Links</h5>
+                <ul>
+                    <li><a href="index.html">Patient Portal</a></li>
+                    <li><a href="kiosk.html" target="_blank">Kiosk Scanner</a></li>
+                    <li><a href="tv-display.html" target="_blank">Public Display</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h5>Hospital Network</h5>
+                <ul>
+                    <li><span>Hazratganj (Main)</span></li>
+                    <li><span>Gomti Nagar</span></li>
+                    <li><span>Aliganj Wing</span></li>
+                    <li><span>Indira Nagar</span></li>
+                    <li><span>Charbagh</span></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 City Hospital Smart Queue. Built for faster, fairer OPD healthcare.
+        </div>
+    </footer>
+
+    <script>
+        const API_URL = window.location.origin + "/api";
+        let deskAuthToken = localStorage.getItem("deskToken") || null;
+        let deskBranch = localStorage.getItem("deskBranch") || "City Hospital (Main Branch)";
+        let lastIssuedTokenData = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (deskAuthToken) {
+                showDeskConsole();
+            }
+        });
+
+        async function handleDeskLogin(e) {
+            e.preventDefault();
+            const phone = document.getElementById('desk-login-phone').value.trim();
+            const password = document.getElementById('desk-login-password').value.trim();
+
+            try {
+                const res = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, password, hospitalBranch: deskBranch })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.role === 'Doctor') {
+                    deskAuthToken = data.token;
+                    deskBranch = data.user.branch || deskBranch;
+                    localStorage.setItem("deskToken", data.token);
+                    localStorage.setItem("deskBranch", deskBranch);
+                    localStorage.setItem("deskStaffName", data.user.name);
+                    showDeskConsole();
+                } else {
+                    alert(data.error || 'Invalid credentials or non-staff account.');
+                }
+            } catch (err) {
+                alert('Server connection error.');
+            }
+        }
+
+        function showDeskConsole() {
+            document.getElementById('desk-auth-view').classList.add('hidden');
+            document.getElementById('desk-dashboard-view').classList.remove('hidden');
+            document.getElementById('desk-logout-item').classList.remove('hidden');
+            document.getElementById('desk-branch-name').innerText = deskBranch;
+            document.getElementById('desk-staff-welcome').innerText = `Welcome, ${localStorage.getItem("deskStaffName") || "Desk Staff"}`;
+            loadBranchDoctors();
+        }
+
+        function deskLogout() {
+            localStorage.removeItem("deskToken");
+            localStorage.removeItem("deskStaffName");
+            location.reload();
+        }
+
+        function handleDeskServiceChange() {
+            const serviceId = document.getElementById('desk-target-service').value;
+            const docWrapper = document.getElementById('desk-doctor-wrapper');
+            if (serviceId === '1') {
+                docWrapper.classList.remove('hidden');
+                loadBranchDoctors();
+            } else {
+                docWrapper.classList.add('hidden');
+            }
+        }
+
+        async function loadBranchDoctors() {
+            const select = document.getElementById('desk-doctor-select');
+            try {
+                const res = await fetch(`${API_URL}/doctors/branch?branch=${encodeURIComponent(deskBranch)}`);
+                const docs = await res.json();
+                select.innerHTML = '<option value="">-- Choose a Doctor --</option>';
+                (docs || []).forEach(d => {
+                    if (d.is_available) {
+                        select.innerHTML += `<option value="${d.staff_id}">${d.name} (${d.specialty})</option>`;
+                    } else {
+                        select.innerHTML += `<option value="${d.staff_id}" disabled style="color:#94a3b8;">🚫 ${d.name} (${d.specialty}) — Unavailable</option>`;
+                    }
+                });
+            } catch (e) {
+                select.innerHTML = '<option value="">Failed to load doctors</option>';
+            }
+        }
+
+        async function handleDeskWalkinSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('desk-patient-name').value.trim();
+            const phone = document.getElementById('desk-patient-phone').value.trim();
+            const priority = document.getElementById('desk-patient-priority').value;
+            const serviceId = parseInt(document.getElementById('desk-target-service').value);
+            const staffId = serviceId === 1 ? (document.getElementById('desk-doctor-select').value || null) : null;
+
+            if (serviceId === 1 && !staffId) {
+                alert("Please select an available doctor for consultation.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/desk/walkin-token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${deskAuthToken}`
+                    },
+                    body: JSON.stringify({ name, phone, priority, serviceId, staffId })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    lastIssuedTokenData = data;
+                    document.getElementById('desk-patient-name').value = '';
+                    document.getElementById('desk-patient-phone').value = '';
+
+                    renderSlipPreview(data);
+                    printSlipWindow(data);
+                } else {
+                    alert(data.error || 'Failed to issue token.');
+                }
+            } catch (err) {
+                alert('Server error issuing token.');
+            }
+        }
+
+        function renderSlipPreview(data) {
+            const container = document.getElementById('last-slip-preview');
+            container.innerHTML = `
+        <div style="font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 2px;">${data.hospitalBranch}</div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Walk-in Token Pass</div>
+        <div style="font-size: 3rem; font-weight: 900; color: var(--primary); margin: 0.4rem 0; line-height: 1;">${data.tokenNumber}</div>
+        <div style="font-size: 0.95rem; font-weight: 600;">Patient: ${data.patientName} (${data.priority})</div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">${data.counter} — ${data.serviceName}</div>
+        <div style="font-size: 0.85rem; color: var(--primary); font-weight: 700; margin-top: 6px;">Est. Wait: ~${data.estimatedWaitMins} mins (${data.peopleAhead} ahead)</div>
+      `;
+            document.getElementById('reprint-btn').classList.remove('hidden');
+        }
+
+        function reprintLastSlip() {
+            if (lastIssuedTokenData) printSlipWindow(lastIssuedTokenData);
+        }
+
+        function printSlipWindow(data) {
+            const printWindow = window.open('', '_blank', 'width=350,height=500');
+            printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Token Slip ${data.tokenNumber}</title>
+          <style>
+            body { font-family: monospace; text-align: center; padding: 15px; margin: 0; }
+            .hospital-name { font-size: 16px; font-weight: bold; }
+            .token { font-size: 42px; font-weight: 900; margin: 10px 0; border: 2px dashed #000; padding: 5px; }
+            .info { font-size: 12px; margin: 4px 0; text-align: left; }
+            .footer { font-size: 10px; margin-top: 15px; border-top: 1px solid #000; padding-top: 5px; }
+          </style>
+        </head>
+        <body>
+          <div class="hospital-name">${data.hospitalBranch}</div>
+          <div>OPD Walk-in Token</div>
+          <div class="token">${data.tokenNumber}</div>
+          <div class="info"><b>Patient:</b> ${data.patientName} (${data.priority})</div>
+          <div class="info"><b>Counter:</b> ${data.counter} — ${data.serviceName}</div>
+          <div class="info"><b>Ahead:</b> ${data.peopleAhead} patient(s)</div>
+          <div class="info"><b>Est. Wait:</b> ~${data.estimatedWaitMins} mins</div>
+          <div class="info"><b>Time:</b> ${new Date().toLocaleTimeString()}</div>
+          <div class="footer">Please watch the TV display board and proceed when your token is called.</div>
+          <script>
+            window.onload = function() { window.print(); window.close(); }
+          <\/script>
+        </body>
+        </html>
+      `);
+            printWindow.document.close();
+        }
+    </script>
+</body>
+
+</html>

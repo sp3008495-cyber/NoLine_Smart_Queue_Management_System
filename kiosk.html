@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kiosk Scanner — Smart Queue</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+
+<body class="kiosk-body">
+
+  <header style="background: var(--dark-surface); border-bottom: 1px solid var(--dark-border);">
+    <div class="nav-container">
+      <div class="brand" onclick="window.location.href='index.html'">
+        <div class="brand-icon">NoLine</div>
+        <div>
+          <h3 style="color:white;">Token Verifier</h3>
+          <p style="font-size:0.7rem; color:#94a3b8;">Offline Digital Pass Verification</p>
+        </div>
+      </div>
+      <ul class="nav-links">
+        <li><a href="index.html" style="color: #cbd5e1;">← Patient/Staff Portal</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <main class="container"
+    style="display: flex; justify-content: center; align-items: center; min-height: calc(100vh - 160px);">
+    <div class="kiosk-card">
+      <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 0.4rem;">🩺 OPD Pass Verification</h2>
+      <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 1.5rem;" id="intro-sub">
+        Enter Station PIN to unlock the camera scanner for this desk.
+      </p>
+
+      <div id="pin-gate">
+        <input type="password" id="pin-input" inputmode="numeric" maxlength="8" placeholder="••••">
+        <button id="pin-submit" class="btn btn-primary" onclick="submitPin()">Unlock Scanner</button>
+        <div id="pin-error" style="color: var(--danger); font-size: 0.85rem; margin-top: 0.75rem; min-height: 1.2rem;">
+        </div>
+      </div>
+
+      <div id="reader" class="hidden"></div>
+
+      <div id="result-panel">
+        <div id="result-icon" style="font-size:2.2rem;">✅</div>
+        <div class="big-token" id="result-token">A101</div>
+        <div style="font-size: 0.95rem; color: #cbd5e1;" id="result-name">—</div>
+        <div style="font-size: 0.95rem; color: #94a3b8; margin: 4px 0;" id="result-service">—</div>
+        <div style="font-size: 0.9rem; font-weight: 600; color: #e2e8f0;" id="result-status">—</div>
+        <button id="scan-again-btn" class="btn btn-primary" style="margin-top: 1.2rem; width: auto;"
+          onclick="resumeScanning()">Scan Next Patient</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const API_URL = window.location.origin + "/api";
+    let html5QrCode = null;
+    let isProcessing = false;
+    let kioskToken = sessionStorage.getItem('kioskToken') || null;
+
+    if (kioskToken) unlockScanner();
+
+    async function submitPin() {
+      const pin = document.getElementById('pin-input').value;
+      const errEl = document.getElementById('pin-error');
+      errEl.innerText = '';
+
+      try {
+        const res = await fetch(`${API_URL}/kiosk/auth`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          kioskToken = data.token;
+          sessionStorage.setItem('kioskToken', kioskToken);
+          unlockScanner();
+        } else {
+          errEl.innerText = data.error || 'Incorrect PIN.';
+        }
+      } catch (e) {
+        errEl.innerText = 'Could not reach the server. Check network connection.';
+      }
+    }
+
+    function unlockScanner() {
+      document.getElementById('pin-gate').classList.add('hidden');
+      document.getElementById('intro-sub').innerText =
+        "Present patient QR code pass to the camera. Scans work offline-first without requiring patient signal.";
+      document.getElementById('reader').classList.remove('hidden');
+      startScanning();
+    }
+
+    function startScanning() {
+      html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 240 },
+        onScanSuccess,
+        () => { }
+      ).catch((err) => {
+        document.getElementById('reader').innerHTML =
+          '<p style="padding:2rem;text-align:center;color:#f87171;">Camera access failed: ' + err + '</p>';
+      });
+    }
+
+    async function onScanSuccess(decodedText) {
+      if (isProcessing) return;
+      isProcessing = true;
+
+      let payload;
+      try {
+        payload = JSON.parse(decodedText);
+      } catch (e) {
+        showResult('invalid', { error: 'Unrecognized QR code — not a Smart Queue token pass.' });
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/tokens/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${kioskToken}` },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.status === 403) {
+          sessionStorage.removeItem('kioskToken');
+          kioskToken = null;
+          if (html5QrCode) html5QrCode.stop().catch(() => { });
+          document.getElementById('reader').classList.add('hidden');
+          document.getElementById('pin-gate').classList.remove('hidden');
+          document.getElementById('pin-error').innerText = 'Kiosk session expired — re-enter the PIN.';
+          return;
+        }
+
+        const data = await res.json();
+        if (data.valid) {
+          showResult(data.alreadyCheckedIn ? 'repeat' : 'valid', data);
+        } else {
+          showResult('invalid', data);
+        }
+      } catch (e) {
+        showResult('invalid', { error: 'Could not reach server. Verify connection.' });
+      }
+    }
+
+    function showResult(kind, data) {
+      if (html5QrCode) html5QrCode.pause(true);
+
+      const panel = document.getElementById('result-panel');
+      panel.className = kind;
+
+      const icons = { valid: '✅', repeat: '⚠️', invalid: '❌' };
+      document.getElementById('result-icon').innerText = icons[kind];
+
+      if (kind === 'invalid') {
+        document.getElementById('result-token').innerText = 'INVALID';
+        document.getElementById('result-name').innerText = data.error || 'Verification failed.';
+        document.getElementById('result-service').innerText = '';
+        document.getElementById('result-status').innerText = '';
+      } else {
+        document.getElementById('result-token').innerText = data.tokenNumber;
+        document.getElementById('result-name').innerText = `Patient: ${data.patientName}`;
+        document.getElementById('result-service').innerText = `${data.serviceName} · ${data.counter}`;
+        document.getElementById('result-status').innerText = kind === 'repeat'
+          ? `Already checked in — Status: ${data.status}`
+          : `Checked in just now — Status: ${data.status}`;
+      }
+    }
+
+    function resumeScanning() {
+      document.getElementById('result-panel').className = '';
+      isProcessing = false;
+      if (html5QrCode) html5QrCode.resume();
+    }
+  </script>
+</body>
+
+</html>
