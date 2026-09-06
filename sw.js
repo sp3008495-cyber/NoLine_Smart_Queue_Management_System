@@ -4,7 +4,7 @@
 // the hospital. This does NOT change any existing app logic — it only adds
 // an offline-first cache layer in front of static files.
 
-const CACHE_NAME = 'smart-queue-shell-v1';
+const CACHE_NAME = 'smart-queue-shell-v2';
 
 // Files needed to render the app + token pass fully offline.
 // NOTE: keep this list in sync if you rename/move index.html, style.css, etc.
@@ -12,6 +12,11 @@ const CORE_ASSETS = [
   './',
   './index.html',
   './style.css',
+  './new.css',
+  './new.js',
+  './fonts/noto-sans-devanagari-devanagari-400-normal.woff2',
+  './fonts/noto-sans-devanagari-devanagari-600-normal.woff2',
+  './fonts/noto-sans-devanagari-devanagari-700-normal.woff2',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png'
