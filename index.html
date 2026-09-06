@@ -13,112 +13,13 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#2563eb">
+  <meta name="theme-color" content="#1d4ed8">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-
-  <style>
-    .ticker-bar {
-      background: #fef2f2;
-      border-bottom: 1px solid #fca5a5;
-      overflow: hidden;
-      white-space: nowrap;
-      padding: 7px 0;
-    }
-
-    .ticker-track {
-      display: inline-block;
-      padding-left: 100%;
-      white-space: nowrap;
-      color: #dc2626;
-      font-weight: 600;
-      font-size: 0.85rem;
-      animation: ticker-scroll 20s linear infinite;
-    }
-
-    .ticker-bar:hover .ticker-track {
-      animation-play-state: paused;
-    }
-
-    @keyframes ticker-scroll {
-      0% {
-        transform: translateX(0);
-      }
-
-      100% {
-        transform: translateX(-100%);
-      }
-    }
-
-    .avail-switch {
-      position: relative;
-      display: inline-block;
-      width: 44px;
-      height: 24px;
-      flex-shrink: 0;
-    }
-
-    .avail-switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .avail-slider {
-      position: absolute;
-      cursor: pointer;
-      inset: 0;
-      background-color: #dc2626;
-      transition: 0.2s;
-      border-radius: 24px;
-    }
-
-    .avail-slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      transition: 0.2s;
-      border-radius: 50%;
-    }
-
-    .avail-switch input:checked+.avail-slider {
-      background-color: #16a34a;
-    }
-
-    .avail-switch input:checked+.avail-slider:before {
-      transform: translateX(20px);
-    }
-
-    .pass-card {
-      margin-top: 1.5rem;
-      border: 1px dashed var(--primary, #2563eb);
-      border-radius: 12px;
-      padding: 1.25rem;
-      background: #f8faff;
-      text-align: center;
-    }
-
-    .pass-card canvas {
-      background: white;
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-    }
-
-    .pass-offline-note {
-      font-size: 0.75rem;
-      color: var(--text-muted, #64748b);
-      margin-top: 0.6rem;
-      line-height: 1.4;
-    }
-  </style>
 </head>
 
 <body>
 
+  <!-- ================= ROLE-SPECIALIZED 3D NAVBAR ================= -->
   <header>
     <div class="nav-container">
       <div class="brand" onclick="goToHospitalSelect()">
@@ -130,17 +31,62 @@
       </div>
 
       <ul class="nav-links">
-        <li><a href="#" onclick="goToHospitalSelect()">Select Hospital</a></li>
-        <li><a href="#" onclick="viewMyLastPass(); return false;">🎫 View My Pass</a></li>
-        <li id="nav-desk-link"><a href="desk.html" target="_blank">📋 Walk-in
-            Desk</a></li>
-        <li id="nav-staff-tools" class="hidden"><a href="tv-display.html" target="_blank">📺 Public Display</a></li>
-        <li id="nav-staff-tools-2" class="hidden"><a href="kiosk.html" target="_blank">📷 Verify Pass</a></li>
-        <li id="nav-user-item" class="hidden"><span id="user-display-name"
-            style="font-weight: 600; font-size: 0.85rem;">-</span></li>
-        <li id="nav-logout-item" class="hidden"><button class="btn"
-            style="padding: 4px 10px; margin: 0; width: auto; font-size: 0.8rem; background: #f1f5f9;"
-            onclick="logout()">Logout</button></li>
+        <!-- 1. GUEST / PUBLIC SCOPE (Logged Out) -->
+        <li class="nav-scope-guest"><a href="#" onclick="goToHospitalSelect(); return false;">🏥 Choose Branch</a></li>
+        <li class="nav-scope-guest"><a href="desk.html" target="_blank">📋 Walk-in Desk</a></li>
+        <li class="nav-scope-guest"><a href="tv-display.html" target="_blank">📺 Public TV Board</a></li>
+        <li class="nav-scope-guest"><a href="notice-board.html" target="_blank">📌 Notice Board</a></li>
+        <li class="nav-scope-guest"><a href="#" onclick="openIvrModal(); return false;"
+            style="color:var(--emerald); font-weight:700;">📞 1800-OPD (Sim)</a></li>
+
+        <!-- 2. PATIENT DASHBOARD SCOPE -->
+        <li class="nav-scope-patient hidden">
+          <span class="nav-tag-pill nav-tag-patient">Patient Portal</span>
+        </li>
+        <li class="nav-scope-patient hidden"><a href="#" onclick="viewMyLastPass(); return false;">🎫 My Token Pass</a>
+        </li>
+        <li class="nav-scope-patient hidden"><a href="#" onclick="openAccountModal('appointments'); return false;">📅
+            Appointments</a></li>
+        <li class="nav-scope-patient hidden"><a href="#" onclick="openAccountModal('vault'); return false;">📁 My
+            Vault</a></li>
+
+        <!-- 3. DOCTOR / CLINICAL STAFF SCOPE -->
+        <li class="nav-scope-doctor hidden">
+          <span class="nav-tag-pill nav-tag-doctor">Doctor On-Duty</span>
+        </li>
+        <li class="nav-scope-doctor hidden"><a href="tv-display.html" target="_blank">📺 Call Display</a></li>
+        <li class="nav-scope-doctor hidden"><a href="kiosk.html" target="_blank">📷 Scanner Kiosk</a></li>
+        <li class="nav-scope-doctor hidden"><a href="#" onclick="openDoctorAccountModal('schedules'); return false;">⏱️
+            Duty Hours</a></li>
+
+        <!-- 4. HOSPITAL ADMINISTRATOR SCOPE (ONLY ROLE ALLOWED TO MANAGE NOTICES) -->
+        <li class="nav-scope-admin hidden">
+          <span class="nav-tag-pill" style="background:#fee2e2; color:#dc2626; border:1px solid #fecaca;">Hospital
+            Admin</span>
+        </li>
+        <li class="nav-scope-admin hidden">
+          <button class="btn btn-primary" style="width:auto; padding:6px 14px; font-size:0.82rem; background:#dc2626;"
+            onclick="openAdminNoticeModal()">
+            📢 Manage Notice Board
+          </button>
+        </li>
+        <li class="nav-scope-admin hidden"><a href="notice-board.html" target="_blank">🖥️ Live Screen</a></li>
+
+        <!-- 5. LOGGED-IN ACCOUNT & LOGOUT BUTTONS -->
+        <li id="nav-account-item" class="hidden">
+          <button id="nav-account-btn" class="account-nav-btn" onclick="handleRoleAccountClick()">
+            <span>👤</span>
+            <span id="nav-account-name">Profile</span>
+          </button>
+        </li>
+
+        <li id="nav-logout-item" class="hidden">
+          <button class="btn"
+            style="padding: 6px 14px; width: auto; font-size: 0.8rem; background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;"
+            onclick="logout()">
+            🚪 Logout
+          </button>
+        </li>
       </ul>
 
       <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileNav()" aria-label="Toggle menu">
@@ -149,7 +95,6 @@
     </div>
   </header>
 
-  <!-- Moving doctor unavailability notice -->
   <div id="unavailability-ticker" class="ticker-bar hidden">
     <div class="ticker-track" id="ticker-track"></div>
   </div>
@@ -214,6 +159,26 @@
           </div>
         </div>
       </div>
+
+      <!-- Public Branch Notice Board Live Widget -->
+      <div class="card" style="background: #f8fafc; border: 1px solid #bfdbfe;">
+        <div
+          style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: #1e3a8a;">📢 Live Hospital Bulletins & Public
+              Advisories</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Verified clinical updates and alerts broadcast by
+              the hospital administration.</p>
+          </div>
+          <a href="notice-board.html" target="_blank" class="btn btn-primary"
+            style="width:auto; padding: 6px 14px; font-size: 0.82rem;">
+            🖥️ Open Fullscreen Board
+          </a>
+        </div>
+
+        <div id="home-notice-preview"
+          style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;"></div>
+      </div>
     </div>
 
     <!-- PAGE 2: AUTHENTICATION -->
@@ -230,8 +195,8 @@
 
         <form id="form-login" onsubmit="handleLogin(event)">
           <div class="form-group">
-            <label>Mobile Number</label>
-            <input type="text" id="login-id" placeholder="Enter your registered mobile number" required>
+            <label>Mobile Number (Patients, Doctors & Admins)</label>
+            <input type="text" id="login-id" placeholder="Enter registered mobile number" required>
           </div>
           <div class="form-group">
             <label>Password</label>
@@ -247,7 +212,7 @@
           </div>
           <div class="form-group">
             <label>Mobile Number</label>
-            <input type="tel" id="reg-phone" placeholder="Enter a 10-digit number" required>
+            <input type="tel" id="reg-phone" placeholder="Enter 10-digit number" required>
           </div>
           <div class="form-group">
             <label>Set a Password</label>
@@ -266,44 +231,104 @@
       </div>
     </div>
 
-    <!-- PAGE 3: PATIENT DASHBOARD -->
+    <!-- PAGE 3: PATIENT DASHBOARD & TWO-MODE BOOKING -->
     <div id="page-patient-dashboard" class="hidden">
       <div class="main-grid">
         <div>
           <div id="selection-card" class="card">
-            <h2 class="card-title">Choose Your Department</h2>
-            <p class="card-subtitle">Pick a counter below to see available doctors or grab your token.</p>
 
-            <div class="services-grid">
-              <div class="service-card" onclick="selectService(1, 'Doctor Consultation', this)">
-                <h4 style="margin-bottom: 4px;">Doctor Consultation</h4>
-                <p style="font-size:0.75rem; color:var(--text-muted);">Counter 3 | ~12 min/pt</p>
-              </div>
-              <div class="service-card" onclick="selectService(2, 'Blood Test / Pathology', this)">
-                <h4 style="margin-bottom: 4px;">Blood Test / Pathology</h4>
-                <p style="font-size:0.75rem; color:var(--text-muted);">Counter 1 | ~8 min/pt</p>
-              </div>
-              <div class="service-card" onclick="selectService(3, 'Medicine Collection', this)">
-                <h4 style="margin-bottom: 4px;">Medicine Collection</h4>
-                <p style="font-size:0.75rem; color:var(--text-muted);">Counter 2 | ~5 min/pt</p>
-              </div>
-              <div class="service-card" onclick="selectService(4, 'Billing & Registration', this)">
-                <h4 style="margin-bottom: 4px;">Billing & Registration</h4>
-                <p style="font-size:0.75rem; color:var(--text-muted);">Counter 4 | ~6 min/pt</p>
-              </div>
+            <div class="mode-pill-container">
+              <button id="mode-live-token" class="mode-pill-btn active" onclick="switchPatientMode('live')">
+                <span>⚡</span> Instant Live Token
+              </button>
+              <button id="mode-doctor-appointment" class="mode-pill-btn" onclick="switchPatientMode('appointment')">
+                <span>🩺</span> Doctor Appointment Booking
+              </button>
             </div>
 
-            <div id="doctor-select-wrapper" class="form-group hidden"
-              style="margin-top: 1rem; background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
-              <label style="color: var(--primary); font-weight: bold;">🩺 Choose Your Doctor <span
-                  style="color:red;">*</span></label>
-              <select id="patient-doctor-select" required onchange="validateDoctorSelection()">
-                <option value="">-- Choose a Doctor --</option>
-              </select>
+            <!-- MODE 1: INSTANT LIVE OPD TOKEN -->
+            <div id="view-mode-live">
+              <h2 class="card-title">Get Instant OPD Live Token</h2>
+              <p class="card-subtitle">Choose a service department below to grab today's direct queue token.</p>
+
+              <div class="services-grid">
+                <div class="service-card" onclick="selectLiveService(1, 'Doctor Consultation', this)">
+                  <h4 style="margin-bottom: 4px;">Doctor Consultation</h4>
+                  <p style="font-size:0.75rem; color:var(--text-muted);">Counter 3 | ~12 min/pt</p>
+                </div>
+                <div class="service-card" onclick="selectLiveService(2, 'Blood Test / Pathology', this)">
+                  <h4 style="margin-bottom: 4px;">Blood Test / Pathology</h4>
+                  <p style="font-size:0.75rem; color:var(--text-muted);">Counter 1 | ~8 min/pt</p>
+                </div>
+                <div class="service-card" onclick="selectLiveService(3, 'Medicine Collection', this)">
+                  <h4 style="margin-bottom: 4px;">Medicine Collection</h4>
+                  <p style="font-size:0.75rem; color:var(--text-muted);">Counter 2 | ~5 min/pt</p>
+                </div>
+                <div class="service-card" onclick="selectLiveService(4, 'Billing & Registration', this)">
+                  <h4 style="margin-bottom: 4px;">Billing & Registration</h4>
+                  <p style="font-size:0.75rem; color:var(--text-muted);">Counter 4 | ~6 min/pt</p>
+                </div>
+              </div>
+
+              <div id="live-doctor-wrapper" class="form-group hidden"
+                style="margin-top: 1rem; background: #f8fafc; padding: 1rem; border-radius: 10px; border: 1px solid var(--border);">
+                <label style="color: var(--primary); font-weight: bold; font-size: 0.9rem;">🩺 Select Available
+                  Attending Doctor <span style="color:red;">*</span></label>
+                <select id="live-doctor-select" required onchange="validateLiveTokenSelection()"
+                  style="margin-top: 0.4rem;">
+                  <option value="">-- Choose an Available Specialist --</option>
+                </select>
+              </div>
+
+              <button id="live-generate-btn" class="btn btn-primary" style="margin-top:1rem;" disabled
+                onclick="generateLiveToken()">
+                ⚡ Issue Instant Queue Token
+              </button>
             </div>
 
-            <button id="generate-btn" class="btn btn-primary" disabled onclick="generateToken()">Get My Digital
-              Token</button>
+            <!-- MODE 2: SCHEDULED DOCTOR APPOINTMENT BOOKING -->
+            <div id="view-mode-appointment" class="hidden">
+              <h2 class="card-title">Book Doctor Appointment Slot</h2>
+              <p class="card-subtitle">Choose a medical specialist, select your date, and reserve your consultation
+                slot.</p>
+
+              <div class="form-group"
+                style="background:#f8fafc; padding:1.25rem; border-radius:12px; border:1px solid var(--border);">
+                <label style="color:var(--primary); font-weight:700; font-size:0.95rem;">🩺 Choose Medical Specialist
+                  <span style="color:red;">*</span></label>
+                <select id="appointment-doctor-select" required onchange="handleAppointmentDoctorChange()"
+                  style="margin-top:0.4rem;">
+                  <option value="">-- Choose an Available Specialist --</option>
+                </select>
+
+                <div id="appointment-doctor-preview" class="hidden"
+                  style="margin-top: 0.75rem; padding: 0.75rem; background: #ffffff; border-radius: 8px; border: 1px solid #bfdbfe; font-size: 0.85rem;">
+                  <div style="font-weight: 700; color: #1e40af;" id="app-preview-name">-</div>
+                  <div style="color: var(--text-muted); margin-top: 2px;" id="app-preview-timing">-</div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.9rem;">
+                  <div>
+                    <label style="font-size:0.78rem; font-weight:700; display:block; margin-bottom:3px;">Appointment
+                      Date <span style="color:red;">*</span></label>
+                    <input type="date" id="app-booking-date" onchange="handleAppointmentDateChange()"
+                      style="padding:0.6rem; border-radius:8px; border:1px solid var(--border); font-size:0.85rem; width:100%;">
+                  </div>
+                  <div>
+                    <label style="font-size:0.78rem; font-weight:700; display:block; margin-bottom:3px;">Preferred
+                      Consultation Time <span style="color:red;">*</span></label>
+                    <input type="time" id="app-booking-time" value="10:00"
+                      style="padding:0.6rem; border-radius:8px; border:1px solid var(--border); font-size:0.85rem; width:100%;">
+                  </div>
+                </div>
+              </div>
+
+              <button id="appointment-book-btn" class="btn btn-primary" style="margin-top:1rem;" disabled
+                onclick="bookDoctorAppointment()">
+                📅 Book Scheduled Appointment
+              </button>
+            </div>
+
           </div>
 
           <div id="queue-card" class="card hidden">
@@ -314,11 +339,12 @@
             <div class="token-display">
               <div style="border-right: 1px solid var(--border);">
                 <p style="font-size:0.7rem; color:var(--text-muted); font-weight:bold;">TOKEN NUMBER</p>
-                <div class="token-number">A101</div>
+                <div class="token-number" id="disp-token-no">A101</div>
               </div>
               <div style="border-right: 1px solid var(--border);">
-                <p style="font-size:0.7rem; color:var(--text-muted); font-weight:bold;">AHEAD OF YOU</p>
-                <div id="people-ahead-text" style="font-size: 2rem; font-weight: 700; margin-top: 0.3rem;">0</div>
+                <p style="font-size:0.7rem; color:var(--text-muted); font-weight:bold;">SCHEDULED TIME</p>
+                <div id="disp-scheduled-time"
+                  style="font-size: 1.3rem; font-weight: 800; color: #0f172a; margin-top: 0.6rem;">10:00 AM</div>
               </div>
               <div>
                 <p style="font-size:0.7rem; color:var(--primary); font-weight:bold;">🤖 SMART WAIT ESTIMATE</p>
@@ -333,19 +359,38 @@
               <p style="font-weight:700; color:var(--primary); margin-bottom:0.75rem;">🎫 Offline Token Pass</p>
               <canvas id="pass-qr-canvas" width="180" height="180"></canvas>
               <p style="font-weight:800; font-size:1.4rem; margin-top:0.6rem;" id="pass-token-number">A101</p>
+              <p style="font-size:0.85rem; font-weight:700; color:#1e40af;" id="pass-doctor-line">Dr. A. K. Sharma
+                (Cardiology)</p>
               <p style="font-size:0.8rem; color:var(--text-muted);" id="pass-service-line">Doctor Consultation · Counter
                 3</p>
+              <p style="font-size:0.8rem; font-weight:600; color:#059669; margin-top:2px;" id="pass-date-line">Date:
+                Today · 10:00 AM</p>
+
               <button class="btn btn-primary" style="margin-top:0.75rem;" onclick="downloadTokenPass()">⬇️ Save My
                 Pass</button>
-              <p class="pass-offline-note">Grab a screenshot or download it now while you still have signal. Works
-                offline at counter checkpoints.</p>
+
+              <button class="btn" style="background:#d97706; color:#ffffff; margin-top:0.75rem; font-size:0.85rem;"
+                onclick="openReschedulePromptModal()">
+                ⏳ Request Same-Day Reschedule
+              </button>
+
+              <p class="pass-offline-note">Works offline at counter checkpoints once saved.</p>
             </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <h3 class="card-title">📁 Patient Account & Health Hub</h3>
+            <p class="card-subtitle" style="margin-bottom: 1rem;">View profile details, token appointments, and verified
+              medical documents.</p>
+            <button class="btn btn-primary" onclick="openAccountModal('appointments')">View My Appointments</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- PAGE 4: STAFF & DOCTOR DASHBOARD -->
+    <!-- PAGE 4: DOCTOR & STAFF DASHBOARD -->
     <div id="page-doctor-dashboard" class="hidden">
       <div class="card">
         <div
@@ -355,9 +400,47 @@
             <p id="doc-branch-sub" style="font-size: 0.85rem; color: var(--primary); font-weight: 600;">Main Branch</p>
           </div>
 
-          <div id="locked-counter-badge"
-            style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; font-weight: 700; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem;">
-            🏢 Counter 4 — Billing & Registration
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button class="btn btn-primary" style="width:auto; padding: 6px 12px; font-size: 0.85rem;"
+              onclick="openStaffVaultUploadModal()">
+              📄 Upload Prescription / Report
+            </button>
+            <div id="locked-counter-badge"
+              style="background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; font-weight: 700; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem;">
+              🏢 Counter 3 — Doctor Consultation
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="background: #f8fafc; border: 1px solid #bfdbfe; margin-bottom: 1.5rem;">
+          <div
+            style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:0.75rem;">
+            <div>
+              <h3 style="font-size: 1.15rem; font-weight: 800; color: #1e3a8a; margin: 0;">🩺 Live Availability &
+                Consultation Schedules</h3>
+              <p style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">
+                Toggle your active status, manage recurring weekly hours, and add date-specific leaves.
+              </p>
+            </div>
+            <button class="btn btn-primary" style="width:auto; padding:5px 12px; font-size:0.8rem;"
+              onclick="openDoctorAccountModal('schedules')">⚙️ Edit Weekly & Leave Schedule</button>
+          </div>
+
+          <div
+            style="display:flex; align-items:center; gap: 1rem; flex-wrap: wrap; background:white; padding: 0.85rem 1.25rem; border-radius: 10px; border: 1px solid var(--border);">
+            <label class="avail-switch">
+              <input type="checkbox" id="doctor-availability-toggle" checked onchange="toggleAvailabilityUI()">
+              <span class="avail-slider"></span>
+            </label>
+            <span id="availability-status-label"
+              style="font-weight:700; color:#16a34a; font-size:1rem;">Available</span>
+
+            <input type="text" id="unavailability-reason-input"
+              placeholder="Why unavailable? (e.g. In Surgery, On Leave)" class="hidden"
+              style="flex:1; min-width:220px; padding:0.6rem; border-radius:8px; border:1px solid #fca5a5;">
+
+            <button class="btn btn-primary" style="width:auto; margin:0; padding: 0.6rem 1.2rem;"
+              onclick="saveGlobalAvailability()">Update Status</button>
           </div>
         </div>
 
@@ -409,37 +492,21 @@
           </div>
 
           <div>
-            <h3>Patients in Queue</h3>
-            <table style="width: 100%; border-collapse: collapse; text-align: left; margin-top: 0.5rem;">
-              <thead>
-                <tr style="border-bottom: 2px solid var(--border); font-size: 0.85rem; color: var(--text-muted);">
-                  <th style="padding: 8px;">Token</th>
-                  <th style="padding: 8px;">Patient Name</th>
-                  <th style="padding: 8px;">Category</th>
-                  <th style="padding: 8px;">Status</th>
-                </tr>
-              </thead>
-              <tbody id="doctor-queue-table-body"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top: 1.5rem;">
-          <h3>🩺 Set Your Availability</h3>
-          <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom: 1rem;">Flip the switch below to update
-            your status.</p>
-
-          <div style="display:flex; align-items:center; gap: 1rem; flex-wrap: wrap;">
-            <label class="avail-switch">
-              <input type="checkbox" id="doctor-availability-toggle" checked onchange="toggleAvailabilityUI()">
-              <span class="avail-slider"></span>
-            </label>
-            <span id="availability-status-label" style="font-weight:700; color:#16a34a;">Available</span>
-            <input type="text" id="unavailability-reason-input"
-              placeholder="Why unavailable? (e.g. On Leave, In Surgery)" class="hidden"
-              style="flex:1; min-width:200px; padding:0.5rem; border-radius:8px; border:1px solid var(--border);">
-            <button class="btn btn-primary" style="margin:0; width: auto;" onclick="saveAvailability()">Update
-              Status</button>
+            <h3>Today's Patient Queue</h3>
+            <div class="table-responsive">
+              <table style="width: 100%; border-collapse: collapse; text-align: left; margin-top: 0.5rem;">
+                <thead>
+                  <tr style="border-bottom: 2px solid var(--border); font-size: 0.85rem; color: var(--text-muted);">
+                    <th style="padding: 8px;">Token</th>
+                    <th style="padding: 8px;">Patient Name</th>
+                    <th style="padding: 8px;">Scheduled Slot</th>
+                    <th style="padding: 8px;">Category</th>
+                    <th style="padding: 8px;">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="doctor-queue-table-body"></tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -452,13 +519,548 @@
       </div>
     </div>
 
+    <!-- PAGE 5: HOSPITAL ADMINISTRATOR DASHBOARD -->
+    <div id="page-admin-dashboard" class="hidden">
+      <div class="card">
+        <div
+          style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h2 id="admin-welcome-title" style="color:#dc2626;">Hospital Administration Console</h2>
+            <p id="admin-branch-sub" style="font-size: 0.85rem; color: var(--text-muted);">Governance, live
+              announcements & clinic advisory operations</p>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn btn-primary" style="width:auto; padding:8px 16px; background:#dc2626;"
+              onclick="openAdminNoticeModal()">
+              📢 Open Notice Board Console
+            </button>
+            <a href="notice-board.html" target="_blank" class="btn btn-dark" style="width:auto; padding:8px 16px;">
+              🖥️ Open Public Display
+            </a>
+          </div>
+        </div>
+
+        <!-- Admin Notices Quick Overview -->
+        <div class="card" style="background:#f8fafc; border:1px solid #fecaca; margin-bottom:0;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+            <h3 style="font-size:1.1rem; font-weight:800; color:#991b1b;">Current Live Notices & Advisories</h3>
+            <button class="btn btn-primary" style="width:auto; padding:4px 10px; font-size:0.75rem;"
+              onclick="loadAdminDashboardNotices()">🔄 Refresh</button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="vault-table">
+              <thead>
+                <tr>
+                  <th>Title & Notice Details</th>
+                  <th>Category</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="admin-dash-notices-body">
+                <tr>
+                  <td colspan="5" style="text-align:center; padding:15px; color:#64748b;">Loading notices...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PATIENT ACCOUNT MODAL -->
+  <div id="modal-account-hub" class="hidden"
+    style="position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+    <div class="card"
+      style="background:white;max-width:880px;width:95%;max-height:90vh;overflow-y:auto;margin:0;box-shadow:var(--shadow-lg);">
+
+      <div
+        style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:0.8rem;margin-bottom:1rem;">
+        <div>
+          <h2 class="card-title" style="margin:0;font-size:1.3rem;">👤 Patient Account & Health Hub</h2>
+          <p class="card-subtitle" style="margin:0;font-size:0.8rem;">Manage your profile, appointment records, and
+            medical vault.</p>
+        </div>
+        <button class="btn" style="width:auto;padding:6px 12px;background:#f1f5f9;font-size:0.85rem;"
+          onclick="closeAccountModal()">✕ Close</button>
+      </div>
+
+      <div class="tab-group" style="margin-bottom:1.2rem;">
+        <button id="acc-tab-profile" class="tab-btn active" onclick="switchAccountTab('profile')">📋 Profile</button>
+        <button id="acc-tab-appointments" class="tab-btn" onclick="switchAccountTab('appointments')">🎟️ Appointments &
+          Tokens</button>
+        <button id="acc-tab-vault" class="tab-btn" onclick="switchAccountTab('vault')">📁 Medical Vault</button>
+        <button id="acc-tab-pwd" class="tab-btn" onclick="switchAccountTab('pwd')">🔑 Security</button>
+      </div>
+
+      <div id="acc-content-profile">
+        <form onsubmit="handlePatientProfileUpdate(event)">
+          <div class="profile-info-grid">
+            <div class="form-group" style="margin:0;">
+              <label>Full Name</label>
+              <input type="text" id="prof-input-name" required>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>Registered Phone</label>
+              <input type="text" id="prof-input-phone" disabled style="background:#f1f5f9; cursor:not-allowed;">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>Gender</label>
+              <select id="prof-input-gender">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+                <option value="N/A">Prefer not to say</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>Age</label>
+              <input type="number" id="prof-input-age" min="0" max="130">
+            </div>
+            <div class="profile-item">
+              <label>Triage Tier</label>
+              <div class="val" id="prof-text-priority">Regular</div>
+            </div>
+            <div class="profile-item">
+              <label>Member Since</label>
+              <div class="val" id="prof-text-since">-</div>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:auto; padding:0.65rem 1.5rem;">Save Profile
+            Changes</button>
+        </form>
+      </div>
+
+      <div id="acc-content-appointments" class="hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+          <p style="font-size:0.85rem;color:var(--text-muted);margin:0;">Your complete token history, assigned doctor,
+            scheduled slot, and live status.</p>
+          <button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:0.75rem;"
+            onclick="loadPatientAppointments()">🔄 Refresh</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="vault-table">
+            <thead>
+              <tr>
+                <th>Token #</th>
+                <th>Doctor & Specialty</th>
+                <th>Appointment Date</th>
+                <th>Scheduled Slot</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="appointments-records-body">
+              <tr>
+                <td colspan="5" style="text-align:center;padding:15px;color:#64748b;">Loading appointments...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="acc-content-vault" class="hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+          <p style="font-size:0.85rem;color:var(--text-muted);margin:0;">Prescriptions and reports uploaded by attending
+            hospital staff.</p>
+          <button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:0.75rem;"
+            onclick="loadVaultRecords()">🔄 Refresh</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="vault-table">
+            <thead>
+              <tr>
+                <th>Document Title</th>
+                <th>Type</th>
+                <th>Uploaded By</th>
+                <th>Upload Date</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="vault-records-body">
+              <tr>
+                <td colspan="5" style="text-align:center;padding:15px;color:#64748b;">Loading vault documents...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="acc-content-pwd" class="hidden" style="max-width:440px;">
+        <form onsubmit="handlePatientPasswordChange(event)">
+          <div class="form-group">
+            <label>Current Password</label>
+            <input type="password" id="pwd-old" required placeholder="Enter current password">
+          </div>
+          <div class="form-group">
+            <label>New Password (min 6 characters)</label>
+            <input type="password" id="pwd-new" required minlength="6" placeholder="Enter new password">
+          </div>
+          <button type="submit" class="btn btn-primary">Save New Password</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- DOCTOR ACCOUNT & ADVANCED SCHEDULE MODAL -->
+  <div id="modal-doctor-account-hub" class="hidden"
+    style="position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+    <div class="card"
+      style="background:white;max-width:880px;width:95%;max-height:90vh;overflow-y:auto;margin:0;box-shadow:var(--shadow-lg);">
+
+      <div
+        style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:0.8rem;margin-bottom:1rem;">
+        <div>
+          <h2 class="card-title" style="margin:0;font-size:1.3rem;">🩺 Doctor Availability & Schedule Center</h2>
+          <p class="card-subtitle" style="margin:0;font-size:0.8rem;">Define recurring working hours, time ranges, and
+            date-specific exceptions.</p>
+        </div>
+        <button class="btn" style="width:auto;padding:6px 12px;background:#f1f5f9;font-size:0.85rem;"
+          onclick="closeDoctorAccountModal()">✕ Close</button>
+      </div>
+
+      <div class="tab-group" style="margin-bottom:1.2rem;">
+        <button id="doc-tab-schedules" class="tab-btn active" onclick="switchDoctorAccountTab('schedules')">📅 Weekly
+          Working Hours</button>
+        <button id="doc-tab-exceptions" class="tab-btn" onclick="switchDoctorAccountTab('exceptions')">🏖️ Date Leaves &
+          Exceptions</button>
+        <button id="doc-tab-appointments" class="tab-btn" onclick="switchDoctorAccountTab('appointments')">🎟️ Preserved
+          Queue</button>
+        <button id="doc-tab-pwd" class="tab-btn" onclick="switchDoctorAccountTab('pwd')">🔑 Password</button>
+      </div>
+
+      <div id="doc-content-schedules">
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">
+          Enable or disable consultation days and set working hours.
+        </p>
+
+        <form onsubmit="handleSaveWeeklySchedules(event)">
+          <div id="weekly-schedules-container"
+            style="background:#f8fafc; border:1px solid var(--border); border-radius:10px; margin-bottom:1rem;"></div>
+          <button type="submit" class="btn btn-primary" style="width:auto; padding:0.65rem 1.5rem;">💾 Save Weekly
+            Hours</button>
+        </form>
+      </div>
+
+      <div id="doc-content-exceptions" class="hidden">
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">
+          Block specific dates or declare special consultation dates.
+        </p>
+
+        <form onsubmit="handleAddDateException(event)"
+          style="background:#f8fafc; padding:1rem; border-radius:10px; border:1px solid var(--border); margin-bottom:1.25rem;">
+          <h4 style="font-size:0.95rem; margin-bottom:0.75rem; color:var(--primary);">+ Add Date Exception</h4>
+          <div
+            style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:0.75rem; margin-bottom:0.75rem;">
+            <div class="form-group" style="margin:0;">
+              <label>Exception Date</label>
+              <input type="date" id="exc-date-input" required>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>Status</label>
+              <select id="exc-status-select" onchange="toggleExceptionTimeInputs()">
+                <option value="0">Off-Duty / Leave / Blocked</option>
+                <option value="1">Special Working Hours</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>Reason / Note</label>
+              <input type="text" id="exc-reason-input" placeholder="e.g. Annual Leave, Medical Conference" required>
+            </div>
+          </div>
+
+          <div id="exc-time-wrapper" class="hidden"
+            style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0.75rem;">
+            <div class="form-group" style="margin:0;">
+              <label>Start Time</label>
+              <input type="time" id="exc-start-time" value="09:00">
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>End Time</label>
+              <input type="time" id="exc-end-time" value="13:00">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width:auto; padding:6px 16px; font-size:0.85rem;">Add
+            Exception Rule</button>
+        </form>
+
+        <h4 style="font-size:0.95rem; margin-bottom:0.5rem;">Active & Upcoming Exceptions</h4>
+        <div class="table-responsive">
+          <table class="vault-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Time Window</th>
+                <th>Reason</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="exceptions-table-body">
+              <tr>
+                <td colspan="5" style="text-align:center; padding:12px; color:var(--text-muted);">No exceptions logged.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="doc-content-appointments" class="hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+          <p style="font-size:0.85rem;color:var(--text-muted);margin:0;">Active and preserved tokens for your
+            consultations.</p>
+          <button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:0.75rem;"
+            onclick="loadDoctorAppointments()">🔄 Refresh</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="vault-table">
+            <thead>
+              <tr>
+                <th>Token #</th>
+                <th>Patient Name</th>
+                <th>Category</th>
+                <th>Date & Scheduled Time</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="doc-appointments-records-body">
+              <tr>
+                <td colspan="5" style="text-align:center;padding:15px;color:#64748b;">Loading appointments...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="doc-content-pwd" class="hidden" style="max-width:440px;">
+        <form onsubmit="handleDoctorPasswordChange(event)">
+          <div class="form-group">
+            <label>Current Doctor Password</label>
+            <input type="password" id="doc-pwd-old" required placeholder="Enter current password">
+          </div>
+          <div class="form-group">
+            <label>New Password (min 6 characters)</label>
+            <input type="password" id="doc-pwd-new" required minlength="6" placeholder="Enter new password">
+          </div>
+          <button type="submit" class="btn btn-primary">Save New Password</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- STAFF MEDICAL VAULT UPLOAD MODAL -->
+  <div id="modal-staff-vault-upload" class="hidden"
+    style="position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;">
+    <div class="card" style="background:white;max-width:480px;width:90%;margin:0;">
+      <h3 class="card-title">📄 Upload Medical Doc / Prescription</h3>
+      <p class="card-subtitle">Attach a clinical report or prescription to a patient's vault.</p>
+
+      <form onsubmit="handleStaffVaultUpload(event)">
+        <div class="form-group">
+          <label>Patient 10-Digit Mobile Number <span style="color:red;">*</span></label>
+          <input type="tel" id="vault-upload-phone" required placeholder="9876543210" maxlength="10">
+        </div>
+        <div class="form-group">
+          <label>Document Title <span style="color:red;">*</span></label>
+          <input type="text" id="vault-upload-title" required placeholder="e.g., Cardiology Prescription / ECG Report">
+        </div>
+        <div class="form-group">
+          <label>Document Category</label>
+          <select id="vault-upload-type">
+            <option value="Prescription">Prescription</option>
+            <option value="Lab Report">Lab Report</option>
+            <option value="Radiology">Radiology / X-Ray</option>
+            <option value="Discharge Summary">Discharge Summary</option>
+            <option value="Other">Other Medical File</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Prescription / Report Details or Notes <span style="color:red;">*</span></label>
+          <textarea id="vault-upload-data" required rows="3"
+            placeholder="Enter medicine dosages, notes, or lab findings..."
+            style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:var(--radius-sm);"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Save to Patient Vault</button>
+        <button type="button" class="btn" style="background:#f1f5f9;margin-top:8px;"
+          onclick="closeStaffVaultUploadModal()">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- RESCHEDULE REQUEST MODAL -->
+  <div id="modal-patient-reschedule" class="hidden"
+    style="position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+    <div
+      style="background:white; border-radius:16px; padding:1.75rem; max-width:400px; width:90%; box-shadow:var(--shadow-lg);">
+      <h3 style="font-weight:800; font-size:1.15rem; margin-bottom:0.4rem;">⏳ Request Token Reschedule</h3>
+      <p style="font-size:0.8rem; color:#64748b; margin-bottom:1rem;">Submit a reason to shift your token to a later
+        consultation slot today.</p>
+
+      <form onsubmit="submitPatientReschedule(event)">
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label style="display:block; font-size:0.78rem; font-weight:700; margin-bottom:4px;">Reason for Rescheduling
+            <span style="color:red;">*</span></label>
+          <textarea id="pat-reschedule-reason" rows="3" required
+            placeholder="e.g. Delayed in traffic, request slot after 11:30 AM"
+            style="width:100%; padding:0.6rem; border-radius:8px; border:1px solid var(--border); font-size:0.85rem;"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="background:#d97706; width:100%;">Submit to Hospital
+          Admin</button>
+        <button type="button" class="btn" style="background:#f1f5f9; color:#0f172a; width:100%; margin-top:0.4rem;"
+          onclick="document.getElementById('modal-patient-reschedule').classList.add('hidden')">Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN NOTICE BOARD MANAGEMENT MODAL (STRICT ACCESS) -->
+  <div id="modal-admin-notices" class="hidden"
+    style="position:fixed;inset:0;background:rgba(15,23,42,0.75);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);">
+    <div class="card"
+      style="background:#ffffff; max-width:840px; width:95%; max-height:90vh; overflow-y:auto; margin:0; box-shadow:var(--shadow-lg);">
+
+      <div
+        style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:0.8rem; margin-bottom:1.2rem;">
+        <div>
+          <h2 class="card-title" style="margin:0; font-size:1.3rem; color:#dc2626;">📢 Hospital Notice Board Manager
+          </h2>
+          <p class="card-subtitle" style="margin:0; font-size:0.8rem;" id="admin-notice-branch-sub">Administrator Notice
+            Controls</p>
+        </div>
+        <button class="btn" style="width:auto; padding:6px 12px; background:#f1f5f9; font-size:0.85rem;"
+          onclick="closeAdminNoticeModal()">✕ Close</button>
+      </div>
+
+      <!-- Create Notice Form -->
+      <form onsubmit="handleCreateNotice(event)"
+        style="background:#f8fafc; padding:1.2rem; border-radius:12px; border:1px solid var(--border); margin-bottom:1.5rem;">
+        <h4 style="font-size:0.95rem; margin-bottom:0.75rem; color:var(--primary);">+ Publish New Hospital Bulletin</h4>
+
+        <div style="display:grid; grid-template-columns: 2fr 1fr 1fr; gap:0.75rem; margin-bottom:0.75rem;">
+          <div class="form-group" style="margin:0;">
+            <label>Bulletin Title <span style="color:red;">*</span></label>
+            <input type="text" id="notice-input-title" required placeholder="e.g., Surgery Protocol / Camp Schedule">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Category</label>
+            <select id="notice-input-category">
+              <option value="General">General Notice</option>
+              <option value="Doctor Update">Doctor Schedule Shift</option>
+              <option value="Camp / Drive">Camp / Health Drive</option>
+              <option value="Emergency">Emergency Advisory</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Priority</label>
+            <select id="notice-input-priority">
+              <option value="Normal">Normal</option>
+              <option value="High">High (Urgent Red)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0.75rem;">
+          <label>Bulletin Message <span style="color:red;">*</span></label>
+          <textarea id="notice-input-msg" required rows="2"
+            placeholder="Write exact advisory instructions for patients and counters..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:auto; padding:8px 20px; background:#dc2626;">🚀 Post
+          Live Notice</button>
+      </form>
+
+      <!-- Active Bulletins Table -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem;">
+        <h4 style="font-size:0.95rem;">Current Branch Bulletins (Live & Archived)</h4>
+        <button class="btn btn-primary" style="width:auto; padding:4px 10px; font-size:0.75rem;"
+          onclick="loadAdminNotices()">🔄 Refresh</button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="vault-table">
+          <thead>
+            <tr>
+              <th>Title & Announcement</th>
+              <th>Category</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-notices-table-body">
+            <tr>
+              <td colspan="5" style="text-align:center; padding:15px; color:#64748b;">Loading notices...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- IN-BROWSER INTERACTIVE IVR SIMULATOR MODAL -->
+  <div id="modal-ivr-simulator" class="hidden"
+    style="position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);">
+    <div class="card"
+      style="background:#0f172a; color:#ffffff; width:340px; border-radius:24px; padding:1.5rem; margin:0; box-shadow:0 20px 35px rgba(0,0,0,0.4); border:1px solid #334155;">
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <span style="font-size:0.75rem; letter-spacing:1px; color:#94a3b8; font-weight:800;">CALL SIMULATOR</span>
+        <button onclick="closeIvrModal()"
+          style="background:transparent; border:none; color:#94a3b8; font-size:1.1rem; cursor:pointer;">✕</button>
+      </div>
+
+      <div
+        style="background:#1e293b; border-radius:14px; padding:12px; margin-bottom:1.2rem; min-height:85px; display:flex; flex-direction:column; justify-content:center; text-align:center; border:1px solid #334155;">
+        <div id="ivr-call-status" style="font-size:0.75rem; color:#38bdf8; font-weight:700; margin-bottom:4px;">DIAL
+          1800-OPD-CARE</div>
+        <div id="ivr-display-text" style="font-size:0.85rem; font-weight:600; color:#f8fafc; line-height:1.3;">Press
+          Call to start automated voice reservation</div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-bottom:1.2rem;">
+        <button class="ivr-key" onclick="handleIvrInput('1')">1 <small>Dept</small></button>
+        <button class="ivr-key" onclick="handleIvrInput('2')">2 <small>Confirm</small></button>
+        <button class="ivr-key" onclick="handleIvrInput('3')">3 <small>Cancel</small></button>
+        <button class="ivr-key" onclick="handleIvrInput('4')">4</button>
+        <button class="ivr-key" onclick="handleIvrInput('5')">5</button>
+        <button class="ivr-key" onclick="handleIvrInput('6')">6</button>
+        <button class="ivr-key" onclick="handleIvrInput('7')">7</button>
+        <button class="ivr-key" onclick="handleIvrInput('8')">8</button>
+        <button class="ivr-key" onclick="handleIvrInput('9')">9</button>
+        <button class="ivr-key" onclick="handleIvrInput('*')">*</button>
+        <button class="ivr-key" onclick="handleIvrInput('0')">0</button>
+        <button class="ivr-key" onclick="handleIvrInput('#')">#</button>
+      </div>
+
+      <div style="display:flex; gap:10px;">
+        <button id="ivr-action-btn" class="btn btn-primary" style="background:#16a34a; border:none; font-weight:700;"
+          onclick="startIvrCall()">
+          📞 Start Call
+        </button>
+        <button class="btn" style="background:#dc2626; color:#ffffff; border:none; font-weight:700;"
+          onclick="endIvrCall()">
+          End
+        </button>
+      </div>
+    </div>
   </div>
 
   <footer class="site-footer">
     <div class="footer-content">
       <div class="footer-brand">
         <div class="footer-brand-row">
-          <div class="brand-icon">OnLine</div>
+          <div class="brand-icon">Noline</div>
           <h4>Smart Queue</h4>
         </div>
         <p class="footer-tagline">
@@ -475,6 +1077,7 @@
           <li><a href="desk.html" target="_blank">📋 Walk-in Desk</a></li>
           <li><a href="kiosk.html" target="_blank">📷 Kiosk Scanner</a></li>
           <li><a href="tv-display.html" target="_blank">📺 Public Display</a></li>
+          <li><a href="notice-board.html" target="_blank">📌 Notice Board</a></li>
         </ul>
       </div>
 
@@ -497,16 +1100,76 @@
   <script>
     const API_URL = window.location.origin + "/api";
     let selectedBranch = "City Hospital (Main Branch)";
-    let selectedServiceId = null, selectedServiceName = "";
+    let selectedLiveServiceId = null, selectedLiveServiceName = "";
     let authToken = localStorage.getItem("token") || null;
     let userRole = localStorage.getItem("userRole") || null;
     let currentUserId = localStorage.getItem("userId") || null;
+    let currentUserPhone = localStorage.getItem("userPhone") || null;
     let currentActiveTokenId = null;
+    let currentPassData = null;
     let chartInstance = null;
+    let branchDoctorsList = [];
+    let activeBookingMode = 'live';
 
-    if (authToken && userRole === 'Doctor') {
-      showDoctorDashboard(localStorage.getItem("userName") || "Staff Member", localStorage.getItem("doctorBranch") || "");
+    // ---------------- ROLE-AWARE NAVBAR COORDINATOR ----------------
+    function updateRoleNavbar(role, name) {
+      document.querySelectorAll('.nav-scope-guest').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-scope-patient').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-scope-doctor').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-scope-admin').forEach(el => el.classList.add('hidden'));
+
+      if (role === 'Patient') {
+        document.querySelectorAll('.nav-scope-patient').forEach(el => el.classList.remove('hidden'));
+        document.getElementById('nav-account-item').classList.remove('hidden');
+        document.getElementById('nav-logout-item').classList.remove('hidden');
+        document.getElementById('nav-account-name').innerText = name || 'Patient';
+      } else if (role === 'Doctor') {
+        document.querySelectorAll('.nav-scope-doctor').forEach(el => el.classList.remove('hidden'));
+        document.getElementById('nav-account-item').classList.remove('hidden');
+        document.getElementById('nav-logout-item').classList.remove('hidden');
+        document.getElementById('nav-account-name').innerText = name || 'Doctor';
+      } else if (role === 'SuperAdmin' || role === 'BranchAdmin') {
+        document.querySelectorAll('.nav-scope-admin').forEach(el => el.classList.remove('hidden'));
+        document.getElementById('nav-account-item').classList.remove('hidden');
+        document.getElementById('nav-logout-item').classList.remove('hidden');
+        document.getElementById('nav-account-name').innerText = name || 'Admin';
+      } else {
+        document.querySelectorAll('.nav-scope-guest').forEach(el => el.classList.remove('hidden'));
+        document.getElementById('nav-account-item').classList.add('hidden');
+        document.getElementById('nav-logout-item').classList.add('hidden');
+      }
     }
+
+    function handleRoleAccountClick() {
+      if (userRole === 'Doctor') {
+        openDoctorAccountModal('schedules');
+      } else if (userRole === 'Patient') {
+        openAccountModal('profile');
+      } else if (userRole === 'SuperAdmin' || userRole === 'BranchAdmin') {
+        openAdminNoticeModal();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const dateInput = document.getElementById('app-booking-date');
+      if (dateInput) {
+        dateInput.min = todayStr;
+        dateInput.value = todayStr;
+      }
+
+      loadHomeNoticePreviews();
+
+      if (authToken && userRole === 'Doctor') {
+        showDoctorDashboard(localStorage.getItem("userName") || "Staff Member", localStorage.getItem("doctorBranch") || "");
+      } else if (authToken && (userRole === 'SuperAdmin' || userRole === 'BranchAdmin')) {
+        showAdminDashboard(localStorage.getItem("userName") || "Administrator", localStorage.getItem("adminBranch") || selectedBranch);
+      } else if (authToken && userRole === 'Patient') {
+        showPatientDashboard(localStorage.getItem("userName") || "Patient");
+      } else {
+        updateRoleNavbar('Guest');
+      }
+    });
 
     function toggleMobileNav() {
       document.getElementById('nav-hamburger').classList.toggle('open');
@@ -518,6 +1181,8 @@
       document.getElementById('page-auth').classList.add('hidden');
       document.getElementById('page-patient-dashboard').classList.add('hidden');
       document.getElementById('page-doctor-dashboard').classList.add('hidden');
+      document.getElementById('page-admin-dashboard').classList.add('hidden');
+      loadHomeNoticePreviews();
     }
 
     function selectHospital(branchName) {
@@ -528,41 +1193,203 @@
       document.getElementById('page-hospital-select').classList.add('hidden');
       document.getElementById('page-auth').classList.remove('hidden');
       loadBranchDoctors(branchName);
+      loadHomeNoticePreviews();
+    }
+
+    function switchPatientMode(mode) {
+      activeBookingMode = mode;
+      document.getElementById('mode-live-token').classList.toggle('active', mode === 'live');
+      document.getElementById('mode-doctor-appointment').classList.toggle('active', mode === 'appointment');
+      document.getElementById('view-mode-live').classList.toggle('hidden', mode !== 'live');
+      document.getElementById('view-mode-appointment').classList.toggle('hidden', mode !== 'appointment');
+      loadBranchDoctors(selectedBranch);
     }
 
     async function loadBranchDoctors(branchName) {
-      const select = document.getElementById('patient-doctor-select');
-      select.innerHTML = '<option value="">-- Fetching Doctors... --</option>';
+      const liveSelect = document.getElementById('live-doctor-select');
+      const appSelect = document.getElementById('appointment-doctor-select');
+      const chosenDate = document.getElementById('app-booking-date') ? document.getElementById('app-booking-date').value : new Date().toISOString().split('T')[0];
+
+      if (liveSelect) liveSelect.innerHTML = '<option value="">-- Fetching Doctors... --</option>';
+      if (appSelect) appSelect.innerHTML = '<option value="">-- Fetching Doctors... --</option>';
 
       try {
-        const res = await fetch(`${API_URL}/doctors/branch?branch=${encodeURIComponent(branchName)}`);
+        const res = await fetch(`${API_URL}/doctors/branch?branch=${encodeURIComponent(branchName)}&date=${encodeURIComponent(chosenDate)}`);
         const doctors = await res.json();
+        branchDoctorsList = doctors || [];
 
-        if (doctors && doctors.length > 0) {
-          select.innerHTML = '<option value="">-- Choose a Doctor --</option>';
-          doctors.forEach(doc => {
-            if (doc.is_available) {
-              select.innerHTML += `<option value="${doc.staff_id}">${doc.name} (${doc.specialty})</option>`;
+        if (branchDoctorsList.length > 0) {
+          if (liveSelect) liveSelect.innerHTML = '<option value="">-- Choose an Available Specialist --</option>';
+          if (appSelect) appSelect.innerHTML = '<option value="">-- Choose an Available Specialist --</option>';
+
+          branchDoctorsList.forEach(doc => {
+            if (doc.evaluatedAvailability) {
+              const activeDays = (doc.activeSchedules || []).map(s => s.day_of_week.slice(0, 3)).join(',');
+              const opt = `<option value="${doc.staff_id}">🟢 ${doc.name} (${doc.specialty}) — Available [${activeDays || 'Working'}]</option>`;
+              if (liveSelect) liveSelect.innerHTML += opt;
+              if (appSelect) appSelect.innerHTML += opt;
             } else {
-              const reason = doc.unavailability_reason ? ` — ${doc.unavailability_reason}` : '';
-              select.innerHTML += `<option value="${doc.staff_id}" disabled style="color:#94a3b8;">🚫 ${doc.name} (${doc.specialty}) — Unavailable${reason}</option>`;
+              const opt = `<option value="${doc.staff_id}" disabled style="color:#94a3b8;">🔴 ${doc.name} (${doc.specialty}) — Unavailable (${doc.effectiveReason || 'Off Duty'})</option>`;
+              if (liveSelect) liveSelect.innerHTML += opt;
+              if (appSelect) appSelect.innerHTML += opt;
             }
           });
         } else {
-          select.innerHTML = '<option value="">No doctors posted at this branch right now</option>';
+          if (liveSelect) liveSelect.innerHTML = '<option value="">No doctors posted at this branch right now</option>';
+          if (appSelect) appSelect.innerHTML = '<option value="">No doctors posted at this branch right now</option>';
         }
 
-        updateUnavailabilityTicker(doctors || []);
+        updateUnavailabilityTicker(branchDoctorsList);
       } catch (e) {
         console.error("Error loading doctors:", e);
-        select.innerHTML = '<option value="">Could not load the doctors list</option>';
       }
+    }
+
+    function handleAppointmentDateChange() {
+      loadBranchDoctors(selectedBranch);
+      handleAppointmentDoctorChange();
+    }
+
+    function selectLiveService(id, name, el) {
+      selectedLiveServiceId = id;
+      selectedLiveServiceName = name;
+      document.querySelectorAll('#view-mode-live .service-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+
+      const docWrapper = document.getElementById('live-doctor-wrapper');
+      if (id === 1) {
+        docWrapper.classList.remove('hidden');
+        validateLiveTokenSelection();
+      } else {
+        docWrapper.classList.add('hidden');
+        document.getElementById('live-generate-btn').disabled = false;
+      }
+    }
+
+    function validateLiveTokenSelection() {
+      const docSelect = document.getElementById('live-doctor-select');
+      const genBtn = document.getElementById('live-generate-btn');
+      if (selectedLiveServiceId === 1) {
+        genBtn.disabled = !docSelect.value;
+      }
+    }
+
+    function handleAppointmentDoctorChange() {
+      const docSelect = document.getElementById('appointment-doctor-select');
+      const bookBtn = document.getElementById('appointment-book-btn');
+      const preview = document.getElementById('appointment-doctor-preview');
+      const selectedId = docSelect.value;
+      const chosenDoc = branchDoctorsList.find(d => String(d.staff_id) === String(selectedId));
+
+      if (chosenDoc && chosenDoc.evaluatedAvailability) {
+        bookBtn.disabled = false;
+        preview.classList.remove('hidden');
+        const activeDays = (chosenDoc.activeSchedules || []).map(s => `${s.day_of_week.slice(0, 3)} (${s.start_time}-${s.end_time})`).join(' | ');
+        document.getElementById('app-preview-name').innerText = `🩺 ${chosenDoc.name} (${chosenDoc.specialty}) — On Duty`;
+        document.getElementById('app-preview-timing').innerText = `📅 Active Consultation Slots: ${activeDays || '09:00 AM - 05:00 PM'}`;
+      } else {
+        bookBtn.disabled = true;
+        preview.classList.add('hidden');
+      }
+    }
+
+    async function generateLiveToken() {
+      const selectedStaffId = selectedLiveServiceId === 1 ? document.getElementById('live-doctor-select').value : null;
+
+      if (selectedLiveServiceId === 1 && !selectedStaffId) {
+        alert("Please pick an available doctor first!");
+        return;
+      }
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const timeStr = new Date().toTimeString().split(' ')[0].slice(0, 5) + ':00';
+
+      const res = await fetch(`${API_URL}/tokens/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceName: selectedLiveServiceName,
+          userId: currentUserId,
+          hospitalBranch: selectedBranch,
+          staffId: selectedStaffId || null,
+          appointmentDate: todayStr,
+          scheduledTime: timeStr
+        })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        renderQueuePassCard(data);
+      } else {
+        alert(data.error || "Token creation failed.");
+      }
+    }
+
+    async function bookDoctorAppointment() {
+      const selectedStaffId = document.getElementById('appointment-doctor-select').value;
+      const appointmentDate = document.getElementById('app-booking-date').value;
+      const scheduledTime = document.getElementById('app-booking-time').value;
+
+      if (!selectedStaffId) {
+        alert("Please choose a medical specialist.");
+        return;
+      }
+      if (!appointmentDate || !scheduledTime) {
+        alert("Please pick a valid date and consultation slot.");
+        return;
+      }
+
+      const res = await fetch(`${API_URL}/tokens/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceName: 'Doctor Consultation',
+          userId: currentUserId,
+          hospitalBranch: selectedBranch,
+          staffId: selectedStaffId,
+          appointmentDate,
+          scheduledTime: scheduledTime + ':00'
+        })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        renderQueuePassCard(data);
+      } else {
+        alert(data.error || "Appointment booking failed.");
+      }
+    }
+
+    function renderQueuePassCard(data) {
+      document.getElementById('active-service-name').innerText = data.serviceName;
+      document.getElementById('active-branch-name').innerText = selectedBranch;
+      document.getElementById('disp-token-no').innerText = data.tokenNumber;
+      document.getElementById('disp-scheduled-time').innerText = `${data.scheduledTime}`;
+      document.getElementById('est-wait-text').innerText = `~${data.estimatedWaitMins} mins`;
+      document.getElementById('selection-card').classList.add('hidden');
+      document.getElementById('queue-card').classList.remove('hidden');
+
+      renderTokenPass({
+        tokenId: data.tokenId,
+        tokenNumber: data.tokenNumber,
+        passHash: data.passHash,
+        generatedAt: data.generatedAt,
+        serviceName: data.serviceName,
+        doctorName: data.doctorName,
+        specialization: data.specialization,
+        counter: data.counter,
+        hospitalBranch: data.hospitalBranch,
+        appointmentDate: data.appointmentDate,
+        scheduledTime: data.scheduledTime
+      });
+
+      startPatientQueuePolling(data.tokenId);
     }
 
     function updateUnavailabilityTicker(doctors) {
       const ticker = document.getElementById('unavailability-ticker');
       const track = document.getElementById('ticker-track');
-      const unavailable = doctors.filter(d => !d.is_available);
+      const unavailable = doctors.filter(d => !d.evaluatedAvailability);
 
       if (unavailable.length === 0) {
         ticker.classList.add('hidden');
@@ -571,7 +1398,7 @@
       }
 
       const messages = unavailable.map(d =>
-        `🚨 ${d.name} (${d.specialty}) is currently unavailable${d.unavailability_reason ? ' — ' + d.unavailability_reason : ''}.`
+        `🚨 ${d.name} (${d.specialty}) is currently unavailable (${d.effectiveReason || 'Off-Duty'}).`
       );
       track.innerText = messages.join('   •   ');
       ticker.classList.remove('hidden');
@@ -593,17 +1420,17 @@
       }
     }
 
-    async function saveAvailability() {
+    async function saveGlobalAvailability() {
       const isAvailable = document.getElementById('doctor-availability-toggle').checked;
       const reason = document.getElementById('unavailability-reason-input').value.trim();
 
       if (!isAvailable && !reason) {
-        alert("Let patients know why you are unavailable (e.g. On Leave, In Surgery).");
+        alert("Please state why you are unavailable (e.g. In Surgery, On Leave).");
         return;
       }
 
       try {
-        const res = await fetch(`${API_URL}/doctor/availability`, {
+        const res = await fetch(`${API_URL}/doctor/availability/global`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
           body: JSON.stringify({ isAvailable, reason: isAvailable ? null : reason })
@@ -611,33 +1438,156 @@
         const data = await res.json();
 
         if (res.ok) {
-          alert(data.message);
+          alert(`✅ ${data.message}`);
+          loadMyDoctorAvailability();
         } else {
-          alert(data.error || "Could not update your status. Please try again.");
+          alert(data.error || "Could not update availability.");
         }
       } catch (e) {
-        console.error('Error updating availability:', e);
-        alert("Could not update your status. Please try again.");
+        alert("Error saving availability.");
       }
     }
 
-    async function loadMyAvailability() {
+    async function loadMyDoctorAvailability() {
       try {
-        const branch = localStorage.getItem('doctorBranch') || selectedBranch;
-        const res = await fetch(`${API_URL}/doctors/branch?branch=${encodeURIComponent(branch)}`);
-        const doctors = await res.json();
-        const me = (doctors || []).find(d => String(d.staff_id) === String(currentUserId));
+        const res = await fetch(`${API_URL}/doctor/availability`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
 
-        const toggle = document.getElementById('doctor-availability-toggle');
-        const reasonInput = document.getElementById('unavailability-reason-input');
+        if (res.ok) {
+          const toggle = document.getElementById('doctor-availability-toggle');
+          const reasonInput = document.getElementById('unavailability-reason-input');
+          toggle.checked = data.globalStatus.isAvailable;
+          reasonInput.value = data.globalStatus.unavailabilityReason || '';
+          toggleAvailabilityUI();
 
-        if (me) {
-          toggle.checked = !!me.is_available;
-          reasonInput.value = me.unavailability_reason || '';
+          renderWeeklySchedulesUI(data.schedules || []);
+          renderExceptionsUI(data.exceptions || []);
         }
-        toggleAvailabilityUI();
       } catch (e) {
-        console.error('Error loading my availability status:', e);
+        console.error('Error loading availability status:', e);
+      }
+    }
+
+    function renderWeeklySchedulesUI(schedules) {
+      const container = document.getElementById('weekly-schedules-container');
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+      container.innerHTML = days.map(day => {
+        const item = schedules.find(s => s.day_of_week === day) || { is_active: day !== 'Sunday', start_time: '09:00:00', end_time: '17:00:00' };
+        return `
+          <div class="schedule-day-row">
+            <div style="display:flex; align-items:center; gap:8px; min-width:120px;">
+              <input type="checkbox" id="sched-active-${day}" ${item.is_active ? 'checked' : ''}>
+              <b>${day}</b>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <input type="time" id="sched-start-${day}" value="${item.start_time.slice(0, 5)}" style="padding:4px 6px; border:1px solid var(--border); border-radius:6px; font-size:0.8rem;">
+              <span>to</span>
+              <input type="time" id="sched-end-${day}" value="${item.end_time.slice(0, 5)}" style="padding:4px 6px; border:1px solid var(--border); border-radius:6px; font-size:0.8rem;">
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function handleSaveWeeklySchedules(e) {
+      e.preventDefault();
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      const payload = days.map(day => ({
+        day_of_week: day,
+        is_active: document.getElementById(`sched-active-${day}`).checked,
+        start_time: document.getElementById(`sched-start-${day}`).value + ':00',
+        end_time: document.getElementById(`sched-end-${day}`).value + ':00'
+      }));
+
+      try {
+        const res = await fetch(`${API_URL}/doctor/availability/schedules`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify({ schedules: payload })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ ${data.message}`);
+          loadMyDoctorAvailability();
+        } else {
+          alert(data.error || 'Failed to update schedules.');
+        }
+      } catch (err) {
+        alert('Server error saving weekly schedules.');
+      }
+    }
+
+    function toggleExceptionTimeInputs() {
+      const isAvailable = document.getElementById('exc-status-select').value === '1';
+      document.getElementById('exc-time-wrapper').classList.toggle('hidden', !isAvailable);
+    }
+
+    async function handleAddDateException(e) {
+      e.preventDefault();
+      const isAvailable = document.getElementById('exc-status-select').value === '1';
+      const payload = {
+        exceptionDate: document.getElementById('exc-date-input').value,
+        isAvailable,
+        startTime: isAvailable ? document.getElementById('exc-start-time').value + ':00' : null,
+        endTime: isAvailable ? document.getElementById('exc-end-time').value + ':00' : null,
+        reason: document.getElementById('exc-reason-input').value.trim()
+      };
+
+      try {
+        const res = await fetch(`${API_URL}/doctor/availability/exceptions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ ${data.message}`);
+          e.target.reset();
+          toggleExceptionTimeInputs();
+          loadMyDoctorAvailability();
+        } else {
+          alert(data.error || 'Failed to add exception.');
+        }
+      } catch (err) {
+        alert('Server error saving exception.');
+      }
+    }
+
+    function renderExceptionsUI(exceptions) {
+      const tbody = document.getElementById('exceptions-table-body');
+      if (exceptions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:12px; color:var(--text-muted);">No active exceptions logged.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = exceptions.map(exc => `
+        <tr>
+          <td><b>${exc.exception_date}</b></td>
+          <td><span class="badge ${exc.is_available ? 'badge-regular' : 'badge-emergency'}">${exc.is_available ? '🟢 Special Hours' : '🔴 Off-Duty Leave'}</span></td>
+          <td>${exc.start_time && exc.end_time ? `${exc.start_time} - ${exc.end_time}` : 'All Day'}</td>
+          <td>${exc.reason || 'Leave'}</td>
+          <td><button class="btn btn-primary" style="background:#fee2e2; color:#dc2626; border:1px solid #fecaca; padding:2px 8px; font-size:0.75rem; width:auto;" onclick="deleteException(${exc.exception_id})">🗑 Delete</button></td>
+        </tr>
+      `).join('');
+    }
+
+    async function deleteException(id) {
+      if (!confirm("Remove this date exception rule?")) return;
+      try {
+        const res = await fetch(`${API_URL}/doctor/availability/exceptions/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          loadMyDoctorAvailability();
+        } else {
+          alert(data.error || 'Failed to remove exception.');
+        }
+      } catch (err) {
+        alert('Server error.');
       }
     }
 
@@ -664,12 +1614,17 @@
         authToken = data.token;
         userRole = data.role;
         currentUserId = data.user.id;
+        currentUserPhone = data.user.phone;
         localStorage.setItem("token", data.token);
         localStorage.setItem("userRole", data.role);
         localStorage.setItem("userId", data.user.id);
         localStorage.setItem("userName", data.user.name);
+        localStorage.setItem("userPhone", data.user.phone);
 
-        if (data.role === 'Doctor') {
+        if (data.role === 'SuperAdmin' || data.role === 'BranchAdmin') {
+          localStorage.setItem("adminBranch", data.user.branch || selectedBranch);
+          showAdminDashboard(data.user.name, data.user.branch || selectedBranch);
+        } else if (data.role === 'Doctor') {
           localStorage.setItem("doctorBranch", data.user.branch);
           localStorage.setItem("staffDepartmentId", data.user.departmentId || 1);
           localStorage.setItem("staffServiceName", data.user.serviceName || "Doctor Consultation");
@@ -701,35 +1656,63 @@
         authToken = data.token;
         userRole = 'Patient';
         currentUserId = data.user.id;
+        currentUserPhone = data.user.phone;
         localStorage.setItem("token", data.token);
         localStorage.setItem("userRole", 'Patient');
         localStorage.setItem("userId", data.user.id);
         localStorage.setItem("userName", data.user.name);
+        localStorage.setItem("userPhone", data.user.phone);
         showPatientDashboard(data.user.name);
       } else alert(data.error);
     }
 
-    function showPatientDashboard(name) {
-      document.getElementById('user-display-name').innerText = name;
-      document.getElementById('nav-user-item').classList.remove('hidden');
-      document.getElementById('nav-logout-item').classList.remove('hidden');
-      document.getElementById('nav-staff-tools').classList.add('hidden');
-      document.getElementById('nav-staff-tools-2').classList.add('hidden');
-
+    async function showPatientDashboard(name) {
+      updateRoleNavbar('Patient', name);
       document.getElementById('page-auth').classList.add('hidden');
+      document.getElementById('page-hospital-select').classList.add('hidden');
+      document.getElementById('page-doctor-dashboard').classList.add('hidden');
+      document.getElementById('page-admin-dashboard').classList.add('hidden');
       document.getElementById('page-patient-dashboard').classList.remove('hidden');
       loadBranchDoctors(selectedBranch);
+      await checkAndRestoreActiveToken();
+    }
+
+    async function checkAndRestoreActiveToken() {
+      if (!authToken || userRole !== 'Patient') return;
+
+      try {
+        const res = await fetch(`${API_URL}/patient/active-token`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+
+        if (res.ok && data.activeToken) {
+          const active = data.activeToken;
+          document.getElementById('active-service-name').innerText = active.serviceName;
+          document.getElementById('active-branch-name').innerText = active.hospitalBranch;
+          document.getElementById('disp-token-no').innerText = active.tokenNumber;
+          document.getElementById('disp-scheduled-time').innerText = `${active.scheduledTime}`;
+          document.getElementById('est-wait-text').innerText = `~${active.estimatedWaitMins} mins`;
+
+          document.getElementById('selection-card').classList.add('hidden');
+          document.getElementById('queue-card').classList.remove('hidden');
+
+          renderTokenPass(active);
+          startPatientQueuePolling(active.tokenId);
+        }
+      } catch (err) {
+        console.error('Error restoring active pass:', err);
+      }
     }
 
     function showDoctorDashboard(name, branch) {
+      updateRoleNavbar('Doctor', name);
       const departmentId = parseInt(localStorage.getItem("staffDepartmentId") || 1);
       const serviceName = localStorage.getItem("staffServiceName") || "Doctor Consultation";
       const counterNumber = localStorage.getItem("staffCounterNumber") || "Counter 3";
 
-      document.getElementById('user-display-name').innerText = name;
       document.getElementById('doc-welcome-title').innerText = `${name}`;
       document.getElementById('doc-branch-sub').innerText = `Assigned to: ${serviceName} | ${branch || selectedBranch}`;
-
       document.getElementById('locked-counter-badge').innerText = `🏢 ${counterNumber} — ${serviceName}`;
 
       const prescribeBox = document.getElementById('doctor-prescribe-box');
@@ -739,96 +1722,53 @@
         prescribeBox.classList.add('hidden');
       }
 
-      document.getElementById('nav-user-item').classList.remove('hidden');
-      document.getElementById('nav-logout-item').classList.remove('hidden');
-      document.getElementById('nav-staff-tools').classList.remove('hidden');
-      document.getElementById('nav-staff-tools-2').classList.remove('hidden');
-
       document.getElementById('page-auth').classList.add('hidden');
       document.getElementById('page-hospital-select').classList.add('hidden');
+      document.getElementById('page-patient-dashboard').classList.add('hidden');
+      document.getElementById('page-admin-dashboard').classList.add('hidden');
       document.getElementById('page-doctor-dashboard').classList.remove('hidden');
 
       loadDoctorQueue();
       loadCrowdChart();
-      loadMyAvailability();
+      loadMyDoctorAvailability();
     }
 
-    function logout() { localStorage.clear(); location.reload(); }
+    function showAdminDashboard(name, branch) {
+      updateRoleNavbar('SuperAdmin', name);
+      document.getElementById('admin-welcome-title').innerText = `Admin Console: ${name}`;
+      document.getElementById('admin-branch-sub').innerText = `Hospital Operations & Notice Board Controller | ${branch}`;
 
-    function selectService(id, name, el) {
-      selectedServiceId = id;
-      selectedServiceName = name;
-      document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
-      el.classList.add('selected');
+      document.getElementById('page-auth').classList.add('hidden');
+      document.getElementById('page-hospital-select').classList.add('hidden');
+      document.getElementById('page-patient-dashboard').classList.add('hidden');
+      document.getElementById('page-doctor-dashboard').classList.add('hidden');
+      document.getElementById('page-admin-dashboard').classList.remove('hidden');
 
-      const docWrapper = document.getElementById('doctor-select-wrapper');
-
-      if (id === 1) {
-        docWrapper.classList.remove('hidden');
-        loadBranchDoctors(selectedBranch);
-        validateDoctorSelection();
-      } else {
-        docWrapper.classList.add('hidden');
-        document.getElementById('generate-btn').disabled = false;
-      }
+      loadAdminDashboardNotices();
     }
 
-    function validateDoctorSelection() {
-      const docSelect = document.getElementById('patient-doctor-select');
-      const genBtn = document.getElementById('generate-btn');
-      if (selectedServiceId === 1) {
-        genBtn.disabled = !docSelect.value;
-      }
-    }
-
-    async function generateToken() {
-      const selectedStaffId = document.getElementById('patient-doctor-select').value;
-
-      if (selectedServiceId === 1 && !selectedStaffId) {
-        alert("Pick a doctor first, then we can generate your token!");
-        return;
-      }
-
-      const res = await fetch(`${API_URL}/tokens/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          serviceName: selectedServiceName,
-          userId: currentUserId,
-          hospitalBranch: selectedBranch,
-          staffId: selectedStaffId || null
-        })
-      });
-      const data = await res.json();
-
-      if (res.ok) {
-        document.getElementById('active-service-name').innerText = data.serviceName;
-        document.getElementById('active-branch-name').innerText = selectedBranch;
-        document.querySelector('.token-number').innerText = data.tokenNumber;
-        document.getElementById('people-ahead-text').innerText = data.peopleAhead;
-        document.getElementById('est-wait-text').innerText = `~${data.estimatedWaitMins} mins`;
-        document.getElementById('selection-card').classList.add('hidden');
-        document.getElementById('queue-card').classList.remove('hidden');
-
-        renderTokenPass({
-          tokenId: data.tokenId,
-          tokenNumber: data.tokenNumber,
-          passHash: data.passHash,
-          generatedAt: data.generatedAt,
-          serviceName: data.serviceName,
-          counter: data.counter,
-          hospitalBranch: data.hospitalBranch
-        });
-      } else {
-        alert(data.error);
-      }
+    function logout() {
+      localStorage.clear();
+      updateRoleNavbar('Guest');
+      location.reload();
     }
 
     function renderTokenPass(pass) {
+      pass.tokenId = pass.tokenId || pass.token_id;
+      currentPassData = pass;
       localStorage.setItem('myTokenPass', JSON.stringify(pass));
 
       document.getElementById('pass-token-number').innerText = pass.tokenNumber;
       document.getElementById('pass-service-line').innerText = `${pass.serviceName} · ${pass.counter}`;
+
+      if (pass.doctorName) {
+        document.getElementById('pass-doctor-line').innerText = `${pass.doctorName} (${pass.specialization || 'General'})`;
+        document.getElementById('pass-doctor-line').classList.remove('hidden');
+      } else {
+        document.getElementById('pass-doctor-line').classList.add('hidden');
+      }
+
+      document.getElementById('pass-date-line').innerText = `Date: ${pass.appointmentDate || 'Today'} · ${pass.scheduledTime || 'Slot'}`;
 
       const payload = JSON.stringify({
         tokenId: pass.tokenId,
@@ -839,31 +1779,9 @@
 
       const canvas = document.getElementById('pass-qr-canvas');
       if (window.QRCode && canvas) {
-        QRCode.toCanvas(canvas, payload, { width: 180, margin: 1 }, (err) => {
-          if (err) {
-            console.error('QR render error:', err);
-            drawQrFallback(canvas);
-          }
-        });
-      } else if (canvas) {
-        drawQrFallback(canvas);
+        QRCode.toCanvas(canvas, payload, { width: 180, margin: 1 });
       }
-
       document.getElementById('token-pass-card').classList.remove('hidden');
-    }
-
-    function drawQrFallback(canvas) {
-      const ctx = canvas.getContext('2d');
-      canvas.width = 180;
-      canvas.height = 180;
-      ctx.fillStyle = '#fef2f2';
-      ctx.fillRect(0, 0, 180, 180);
-      ctx.fillStyle = '#dc2626';
-      ctx.font = '13px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('QR unavailable —', 90, 80);
-      ctx.fillText('check your connection,', 90, 100);
-      ctx.fillText('then reload the page.', 90, 120);
     }
 
     function downloadTokenPass() {
@@ -874,12 +1792,12 @@
 
       const out = document.createElement('canvas');
       out.width = 420;
-      out.height = 620;
+      out.height = 640;
       const ctx = out.getContext('2d');
 
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, out.width, out.height);
-      ctx.fillStyle = '#2563eb';
+      ctx.fillStyle = '#1d4ed8';
       ctx.fillRect(0, 0, out.width, 90);
 
       ctx.fillStyle = '#ffffff';
@@ -889,21 +1807,25 @@
 
       ctx.fillStyle = '#0f172a';
       ctx.font = 'bold 64px Arial';
-      ctx.fillText(pass.tokenNumber, out.width / 2, 200);
+      ctx.fillText(pass.tokenNumber, out.width / 2, 190);
 
-      ctx.font = '18px Arial';
+      ctx.font = 'bold 18px Arial';
+      ctx.fillStyle = '#1e40af';
+      ctx.fillText(pass.doctorName ? `${pass.doctorName} (${pass.specialization})` : pass.serviceName, out.width / 2, 230);
+
+      ctx.font = '15px Arial';
       ctx.fillStyle = '#334155';
-      ctx.fillText(pass.serviceName || '', out.width / 2, 240);
-      ctx.fillText(pass.counter || '', out.width / 2, 266);
-      ctx.fillText(pass.hospitalBranch || '', out.width / 2, 292);
+      ctx.fillText(`${pass.serviceName} · ${pass.counter}`, out.width / 2, 255);
+      ctx.fillText(`Scheduled: ${pass.appointmentDate || 'Today'} at ${pass.scheduledTime || 'Slot'}`, out.width / 2, 280);
+      ctx.fillText(pass.hospitalBranch || '', out.width / 2, 305);
 
       if (qrCanvas) {
-        ctx.drawImage(qrCanvas, (out.width - 220) / 2, 320, 220, 220);
+        ctx.drawImage(qrCanvas, (out.width - 200) / 2, 330, 200, 200);
       }
 
       ctx.font = '13px Arial';
       ctx.fillStyle = '#64748b';
-      ctx.fillText('Show this at the counter or kiosk — works offline once saved.', out.width / 2, 580);
+      ctx.fillText('Show this at the counter or kiosk — works offline once saved.', out.width / 2, 595);
 
       const link = document.createElement('a');
       link.download = `token-pass-${pass.tokenNumber}.png`;
@@ -911,48 +1833,503 @@
       link.click();
     }
 
-    function viewMyLastPass() {
-      const passRaw = localStorage.getItem('myTokenPass');
-      if (!passRaw) {
-        alert("No saved pass found on this device yet, generate a token first while you have signal.");
+    async function viewMyLastPass() {
+      if (!currentPassData) {
+        const saved = localStorage.getItem('myTokenPass');
+        if (saved) currentPassData = JSON.parse(saved);
+      }
+
+      if (!currentPassData && authToken && userRole === 'Patient') {
+        await checkAndRestoreActiveToken();
+      }
+
+      if (!currentPassData) {
+        alert("No saved pass found on this device yet. Please select an available department or doctor to book your token.");
         return;
       }
-      const pass = JSON.parse(passRaw);
-      const payload = JSON.stringify({
-        tokenId: pass.tokenId,
-        tokenNumber: pass.tokenNumber,
-        passHash: pass.passHash,
-        generatedAt: pass.generatedAt
-      });
 
-      const ageSeconds = pass.generatedAt ? (Math.floor(Date.now() / 1000) - pass.generatedAt) : 0;
-      const isExpired = ageSeconds > 24 * 60 * 60;
-      const expiryNote = isExpired
-        ? `<p style="font-size:0.75rem; color:#dc2626; font-weight:600; margin-top:0.5rem;">⚠️ This pass is over 24 hours old and will no longer scan as valid. Generate a new token.</p>`
-        : '';
+      const pass = currentPassData;
+      pass.tokenId = pass.tokenId || pass.token_id;
 
       const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);';
       overlay.innerHTML = `
-        <div class="pass-card" style="background:white;max-width:320px;width:90%;">
+        <div class="pass-card" style="background:white;max-width:340px;width:90%;">
           <p style="font-weight:700; color:var(--primary); margin-bottom:0.75rem;">🎫 Offline Token Pass</p>
           <canvas id="modal-pass-qr" width="180" height="180"></canvas>
           <p style="font-weight:800; font-size:1.4rem; margin-top:0.6rem;">${pass.tokenNumber}</p>
+          <p style="font-weight:700; font-size:0.9rem; color:#1e40af;">${pass.doctorName ? pass.doctorName + ' (' + (pass.specialization || '') + ')' : pass.serviceName}</p>
           <p style="font-size:0.8rem; color:var(--text-muted);">${pass.serviceName || ''} · ${pass.counter || ''}</p>
-          ${expiryNote}
+          <p style="font-size:0.8rem; font-weight:600; color:#059669; margin-top:3px;">Scheduled: ${pass.appointmentDate || 'Today'} · ${pass.scheduledTime || ''}</p>
           <button class="btn btn-primary" style="margin-top:0.75rem;" id="modal-pass-close">Close</button>
         </div>`;
       document.body.appendChild(overlay);
 
       if (window.QRCode) {
-        QRCode.toCanvas(document.getElementById('modal-pass-qr'), payload, { width: 180, margin: 1 }, (err) => {
-          if (err) drawQrFallback(document.getElementById('modal-pass-qr'));
-        });
-      } else {
-        drawQrFallback(document.getElementById('modal-pass-qr'));
+        QRCode.toCanvas(document.getElementById('modal-pass-qr'), JSON.stringify({
+          tokenId: pass.tokenId,
+          tokenNumber: pass.tokenNumber,
+          passHash: pass.passHash,
+          generatedAt: pass.generatedAt
+        }), { width: 180, margin: 1 });
       }
       document.getElementById('modal-pass-close').onclick = () => overlay.remove();
       overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    }
+
+    function openReschedulePromptModal() {
+      if (!currentPassData) {
+        const saved = localStorage.getItem('myTokenPass');
+        if (saved) currentPassData = JSON.parse(saved);
+      }
+      const activeId = currentPassData && (currentPassData.tokenId || currentPassData.token_id);
+      if (!activeId) return alert("You must have an active token today to request rescheduling.");
+      document.getElementById('modal-patient-reschedule').classList.remove('hidden');
+    }
+
+    async function submitPatientReschedule(e) {
+      e.preventDefault();
+      const reason = document.getElementById('pat-reschedule-reason').value.trim();
+      const tokenId = currentPassData && (currentPassData.tokenId || currentPassData.token_id);
+
+      try {
+        const res = await fetch(`${API_URL}/tokens/${tokenId}/reschedule-request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify({ reason })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`✅ ${data.message}`);
+          document.getElementById('modal-patient-reschedule').classList.add('hidden');
+          document.getElementById('pat-reschedule-reason').value = '';
+        } else {
+          alert(data.error || 'Failed to submit request.');
+        }
+      } catch (err) { alert('Server error submitting reschedule request.'); }
+    }
+
+    // ---------------- NOTICE BOARD: STRICT HOSPITAL ADMIN OPERATIONS ----------------
+
+    async function loadHomeNoticePreviews() {
+      try {
+        const res = await fetch(`${API_URL}/notices?branch=${encodeURIComponent(selectedBranch)}`);
+        const data = await res.json();
+        const container = document.getElementById('home-notice-preview');
+        if (!container) return;
+
+        if (!data.notices || data.notices.length === 0) {
+          container.innerHTML = '<p style="color:#64748b; font-size:0.85rem; padding: 8px;">All departments operating under normal clinical conditions today.</p>';
+          return;
+        }
+
+        container.innerHTML = data.notices.slice(0, 3).map(n => `
+          <div style="background:white; border:1px solid var(--border); border-left:4px solid ${n.priority === 'High' ? '#dc2626' : '#2563eb'}; border-radius:10px; padding:12px 14px; box-shadow:var(--shadow-sm);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.68rem; font-weight:800; color:${n.priority === 'High' ? '#dc2626' : '#2563eb'}; text-transform:uppercase;">${n.category}</span>
+              <small style="color:#94a3b8; font-size:0.7rem;">${n.posted_time}</small>
+            </div>
+            <div style="font-weight:700; font-size:0.92rem; color:var(--text-main); margin:4px 0 2px;">${n.title}</div>
+            <p style="font-size:0.82rem; color:var(--text-muted); line-height:1.4;">${n.message}</p>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.log('Notice board service loading...');
+      }
+    }
+
+    function openAdminNoticeModal() {
+      if (userRole !== 'SuperAdmin' && userRole !== 'BranchAdmin') {
+        alert("Access Denied: Only authenticated Hospital Administrators can manage notices.");
+        return;
+      }
+      document.getElementById('modal-admin-notices').classList.remove('hidden');
+      const branch = localStorage.getItem('adminBranch') || selectedBranch;
+      document.getElementById('admin-notice-branch-sub').innerText = `Managing Notice Board for: ${branch}`;
+      loadAdminNotices();
+    }
+
+    function closeAdminNoticeModal() {
+      document.getElementById('modal-admin-notices').classList.add('hidden');
+      loadHomeNoticePreviews();
+      if (userRole === 'SuperAdmin' || userRole === 'BranchAdmin') {
+        loadAdminDashboardNotices();
+      }
+    }
+
+    async function loadAdminNotices() {
+      const branch = localStorage.getItem('adminBranch') || selectedBranch;
+      const tbody = document.getElementById('admin-notices-table-body');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px; color:#64748b;">Loading notices...</td></tr>';
+
+      try {
+        const res = await fetch(`${API_URL}/admin/notices?branch=${encodeURIComponent(branch)}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+
+        if (!data.notices || data.notices.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px; color:#64748b;">No notices on board. Publish a new bulletin above.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.notices.map(n => `
+          <tr>
+            <td>
+              <b>${n.title}</b>
+              <div style="font-size:0.8rem; color:#64748b; margin-top:2px;">${n.message}</div>
+              <small style="color:#94a3b8;">Posted: ${n.posted_time}</small>
+            </td>
+            <td><span class="badge badge-regular">${n.category}</span></td>
+            <td><span class="badge ${n.priority === 'High' ? 'badge-emergency' : 'badge-regular'}">${n.priority}</span></td>
+            <td><span class="badge ${n.is_active ? 'badge-senior' : 'badge-regular'}">${n.is_active ? '🟢 Active' : '⚪ Archived'}</span></td>
+            <td>
+              <div style="display:flex; gap:6px;">
+                <button class="btn" style="width:auto; padding:4px 8px; font-size:0.75rem; background:#f1f5f9;" onclick="toggleNoticeActive(${n.notice_id}, ${n.is_active ? 0 : 1})">
+                  ${n.is_active ? 'Archive' : 'Activate'}
+                </button>
+                <button class="btn" style="width:auto; padding:4px 8px; font-size:0.75rem; background:#fee2e2; color:#dc2626;" onclick="deleteNoticePermanently(${n.notice_id})">
+                  🗑
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#dc2626; padding:15px;">Failed to load branch bulletins.</td></tr>';
+      }
+    }
+
+    async function loadAdminDashboardNotices() {
+      const branch = localStorage.getItem('adminBranch') || selectedBranch;
+      const tbody = document.getElementById('admin-dash-notices-body');
+      if (!tbody) return;
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px; color:#64748b;">Loading notices...</td></tr>';
+
+      try {
+        const res = await fetch(`${API_URL}/admin/notices?branch=${encodeURIComponent(branch)}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+
+        if (!data.notices || data.notices.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px; color:#64748b;">No bulletins currently logged.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.notices.slice(0, 5).map(n => `
+          <tr>
+            <td>
+              <b>${n.title}</b>
+              <div style="font-size:0.8rem; color:#64748b;">${n.message}</div>
+            </td>
+            <td><span class="badge badge-regular">${n.category}</span></td>
+            <td><span class="badge ${n.priority === 'High' ? 'badge-emergency' : 'badge-regular'}">${n.priority}</span></td>
+            <td><span class="badge ${n.is_active ? 'badge-senior' : 'badge-regular'}">${n.is_active ? 'Active' : 'Archived'}</span></td>
+            <td>
+              <button class="btn" style="width:auto; padding:3px 8px; font-size:0.75rem; background:#fee2e2; color:#dc2626;" onclick="deleteNoticePermanently(${n.notice_id})">
+                Remove
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#dc2626; padding:15px;">Failed to load notices.</td></tr>';
+      }
+    }
+
+    async function handleCreateNotice(e) {
+      e.preventDefault();
+      const branch = localStorage.getItem('adminBranch') || selectedBranch;
+      const payload = {
+        hospitalBranch: branch,
+        title: document.getElementById('notice-input-title').value.trim(),
+        category: document.getElementById('notice-input-category').value,
+        priority: document.getElementById('notice-input-priority').value,
+        message: document.getElementById('notice-input-msg').value.trim()
+      };
+
+      try {
+        const res = await fetch(`${API_URL}/admin/notices`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          alert('✅ Notice published live on the board!');
+          e.target.reset();
+          loadAdminNotices();
+          loadHomeNoticePreviews();
+        } else {
+          alert(data.error || 'Failed to publish notice.');
+        }
+      } catch (err) {
+        alert('Server connection error.');
+      }
+    }
+
+    async function toggleNoticeActive(id, newStatus) {
+      try {
+        const res = await fetch(`${API_URL}/admin/notices/${id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ isActive: newStatus })
+        });
+        if (res.ok) {
+          loadAdminNotices();
+          loadHomeNoticePreviews();
+        }
+      } catch (e) {
+        alert('Failed to update bulletin status.');
+      }
+    }
+
+    async function deleteNoticePermanently(id) {
+      if (!confirm("Permanently delete this hospital bulletin?")) return;
+      try {
+        const res = await fetch(`${API_URL}/admin/notices/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+          loadAdminNotices();
+          loadHomeNoticePreviews();
+          if (userRole === 'SuperAdmin' || userRole === 'BranchAdmin') loadAdminDashboardNotices();
+        }
+      } catch (e) {
+        alert('Failed to delete bulletin.');
+      }
+    }
+
+    // ---------------- PATIENT ACCOUNT LOGIC ----------------
+    async function openAccountModal(initialTab = 'appointments') {
+      document.getElementById('modal-account-hub').classList.remove('hidden');
+      switchAccountTab(initialTab);
+      await loadPatientProfile();
+    }
+
+    function closeAccountModal() { document.getElementById('modal-account-hub').classList.add('hidden'); }
+
+    function switchAccountTab(tabKey) {
+      ['profile', 'appointments', 'vault', 'pwd'].forEach(k => {
+        const btn = document.getElementById(`acc-tab-${k}`);
+        const content = document.getElementById(`acc-content-${k}`);
+        if (btn) btn.classList.toggle('active', k === tabKey);
+        if (content) content.classList.toggle('hidden', k !== tabKey);
+      });
+      if (tabKey === 'appointments') loadPatientAppointments();
+      if (tabKey === 'vault') loadVaultRecords();
+    }
+
+    async function loadPatientProfile() {
+      try {
+        const res = await fetch(`${API_URL}/patient/profile`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        const data = await res.json();
+        if (res.ok && data.profile) {
+          const p = data.profile;
+          document.getElementById('prof-input-name').value = p.name || '';
+          document.getElementById('prof-input-phone').value = p.phone || '';
+          document.getElementById('prof-input-gender').value = p.gender || 'N/A';
+          document.getElementById('prof-input-age').value = p.age || 0;
+          document.getElementById('prof-text-priority').innerText = p.priority || 'Regular';
+          document.getElementById('prof-text-since').innerText = p.member_since || 'Active';
+        }
+      } catch (e) { console.error('Failed to load patient profile:', e); }
+    }
+
+    async function handlePatientProfileUpdate(e) {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById('prof-input-name').value.trim(),
+        gender: document.getElementById('prof-input-gender').value,
+        age: parseInt(document.getElementById('prof-input-age').value) || 0
+      };
+
+      const res = await fetch(`${API_URL}/patient/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('✅ Profile details updated successfully!');
+        localStorage.setItem('userName', payload.name);
+        document.getElementById('nav-account-name').innerText = payload.name;
+      } else alert(data.error || 'Failed to update profile.');
+    }
+
+    async function loadPatientAppointments() {
+      const tbody = document.getElementById('appointments-records-body');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:15px;color:#64748b;">Loading appointments...</td></tr>';
+
+      try {
+        const res = await fetch(`${API_URL}/patient/my-appointments`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        const data = await res.json();
+
+        if (!data.appointments || data.appointments.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:15px;color:#64748b;">No appointments or queue tokens booked yet.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.appointments.map(a => `
+          <tr>
+            <td style="font-weight:800; color:var(--primary);">${a.token_number}</td>
+            <td><b>${a.doctor_name}</b> <br><small style="color:var(--text-muted);">${a.specialization} (${a.counter_number})</small></td>
+            <td>${a.appointment_date}</td>
+            <td><b>${a.scheduled_time}</b></td>
+            <td>
+              <span class="badge ${a.status === 'Completed' ? 'badge-regular' : a.status === 'Called' ? 'badge-emergency' : 'badge-senior'}">
+                ${a.status}
+              </span>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:15px;color:#dc2626;">Error fetching appointment history.</td></tr>'; }
+    }
+
+    async function loadVaultRecords() {
+      const tbody = document.getElementById('vault-records-body');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:15px;color:#64748b;">Loading vault documents...</td></tr>';
+
+      try {
+        const res = await fetch(`${API_URL}/patient/my-vault`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        const data = await res.json();
+
+        if (!data.records || data.records.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:15px;color:#64748b;">No documents in vault yet.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.records.map(doc => `
+          <tr>
+            <td><b>${doc.doc_title}</b></td>
+            <td><span class="badge badge-regular">${doc.doc_type}</span></td>
+            <td><div><b>${doc.uploaded_by_name}</b></div><div style="font-size:0.75rem;color:var(--text-muted);">${doc.uploaded_by_role}</div></td>
+            <td style="font-size:0.8rem;color:#475569;">${doc.formatted_date}</td>
+            <td><button class="btn btn-primary" style="padding:4px 8px;font-size:0.75rem;width:auto;" onclick="alert('📄 ' + encodeURIComponent('${doc.doc_title}') + '\\n\\n' + '${doc.file_data}')">View</button></td>
+          </tr>
+        `).join('');
+      } catch (err) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:15px;color:#dc2626;">Error fetching vault documents.</td></tr>'; }
+    }
+
+    async function handlePatientPasswordChange(e) {
+      e.preventDefault();
+      const oldPassword = document.getElementById('pwd-old').value;
+      const newPassword = document.getElementById('pwd-new').value;
+
+      const res = await fetch(`${API_URL}/patient/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify({ oldPassword, newPassword })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('✅ Password changed successfully!');
+        document.getElementById('pwd-old').value = '';
+        document.getElementById('pwd-new').value = '';
+        switchAccountTab('profile');
+      } else alert(data.error || 'Failed to update password.');
+    }
+
+    // ---------------- DOCTOR ACCOUNT LOGIC ----------------
+    async function openDoctorAccountModal(tab = 'schedules') {
+      document.getElementById('modal-doctor-account-hub').classList.remove('hidden');
+      switchDoctorAccountTab(tab);
+      await loadMyDoctorAvailability();
+    }
+
+    function closeDoctorAccountModal() { document.getElementById('modal-doctor-account-hub').classList.add('hidden'); }
+
+    function switchDoctorAccountTab(tabKey) {
+      ['schedules', 'exceptions', 'appointments', 'pwd'].forEach(k => {
+        const btn = document.getElementById(`doc-tab-${k}`);
+        const content = document.getElementById(`doc-content-${k}`);
+        if (btn) btn.classList.toggle('active', k === tabKey);
+        if (content) content.classList.toggle('hidden', k !== tabKey);
+      });
+      if (tabKey === 'appointments') loadDoctorAppointments();
+    }
+
+    async function loadDoctorAppointments() {
+      const tbody = document.getElementById('doc-appointments-records-body');
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:15px;color:#64748b;">Loading scheduled patients...</td></tr>';
+
+      try {
+        const res = await fetch(`${API_URL}/doctor/my-appointments`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+        const data = await res.json();
+
+        if (!data.appointments || data.appointments.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:15px;color:#64748b;">No patients scheduled in queue.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.appointments.map(a => `
+          <tr>
+            <td style="font-weight:800; color:var(--primary);">${a.token_number}</td>
+            <td><b>${a.patient_name}</b> <br><small style="color:var(--text-muted);">${a.patient_phone}</small></td>
+            <td><span class="badge ${a.priority === 'Emergency' ? 'badge-emergency' : 'badge-regular'}">${a.priority}</span></td>
+            <td>${a.appointment_date} <br><small style="color:var(--text-muted);">${a.scheduled_time}</small></td>
+            <td>
+              <span class="badge ${a.status === 'Completed' ? 'badge-regular' : a.status === 'Called' ? 'badge-emergency' : 'badge-senior'}">
+                ${a.status}
+              </span>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:15px;color:#dc2626;">Error loading appointments.</td></tr>'; }
+    }
+
+    async function handleDoctorPasswordChange(e) {
+      e.preventDefault();
+      const oldPassword = document.getElementById('doc-pwd-old').value;
+      const newPassword = document.getElementById('doc-pwd-new').value;
+
+      const res = await fetch(`${API_URL}/doctor/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify({ oldPassword, newPassword })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('✅ Doctor password updated successfully!');
+        document.getElementById('doc-pwd-old').value = '';
+        document.getElementById('doc-pwd-new').value = '';
+        switchDoctorAccountTab('schedules');
+      } else alert(data.error || 'Failed to update password.');
+    }
+
+    function openStaffVaultUploadModal() { document.getElementById('modal-staff-vault-upload').classList.remove('hidden'); }
+    function closeStaffVaultUploadModal() { document.getElementById('modal-staff-vault-upload').classList.add('hidden'); }
+
+    async function handleStaffVaultUpload(e) {
+      e.preventDefault();
+      const payload = {
+        patientPhone: document.getElementById('vault-upload-phone').value.trim(),
+        docTitle: document.getElementById('vault-upload-title').value.trim(),
+        docType: document.getElementById('vault-upload-type').value,
+        fileData: document.getElementById('vault-upload-data').value.trim(),
+        notes: ''
+      };
+
+      const res = await fetch(`${API_URL}/vault/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`✅ ${data.message}`);
+        closeStaffVaultUploadModal();
+        e.target.reset();
+      } else alert(data.error || 'Failed to upload document.');
     }
 
     if ('serviceWorker' in navigator) {
@@ -961,143 +2338,299 @@
       });
     }
 
+    // ---------------- DOCTOR QUEUE CONTROLLER ----------------
     async function loadDoctorQueue() {
-      const serviceId = localStorage.getItem("staffDepartmentId") || 1;
-      const res = await fetch(`${API_URL}/doctor/queue/${serviceId}`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
-      const data = await res.json();
+      if (!authToken || userRole !== 'Doctor') return;
 
-      document.getElementById('stat-total-tokens').innerText = data.totalIssued;
-      let emergencyCount = 0, seniorCount = 0;
-      const tbody = document.getElementById('doctor-queue-table-body');
-      tbody.innerHTML = '';
+      try {
+        const res = await fetch(`${API_URL}/queue/doctor/live`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
 
-      let called = data.tokens.find(t => t.status === 'Called');
-      if (called) {
-        document.getElementById('current-called-token').innerText = called.token_number;
-        document.getElementById('current-patient-name').innerText = `${called.name || 'Patient'} (${called.priority || 'Regular'})`;
-        currentActiveTokenId = called.token_id;
-      } else {
-        document.getElementById('current-called-token').innerText = '--';
-        document.getElementById('current-patient-name').innerText = 'No Active Patient';
-        currentActiveTokenId = null;
+        if (res.ok && data.success) {
+          document.getElementById('stat-total-tokens').innerText = data.stats.totalIssued;
+          document.getElementById('stat-emergency-count').innerText = data.stats.emergencyCount;
+          document.getElementById('stat-senior-count').innerText = data.stats.seniorCount;
+
+          const current = data.currentPatient;
+          if (current) {
+            document.getElementById('current-called-token').innerText = current.token_number;
+            document.getElementById('current-patient-name').innerText = `${current.patient_name} (${current.priority})`;
+            currentActiveTokenId = current.token_id;
+          } else {
+            document.getElementById('current-called-token').innerText = '--';
+            document.getElementById('current-patient-name').innerText = 'Nobody Called Yet';
+            currentActiveTokenId = null;
+          }
+
+          const tbody = document.getElementById('doctor-queue-table-body');
+          tbody.innerHTML = '';
+
+          if (data.waitingQueue.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px; color:#64748b;">No patients currently waiting in your queue.</td></tr>';
+            return;
+          }
+
+          data.waitingQueue.forEach(p => {
+            tbody.innerHTML += `
+              <tr style="border-bottom: 1px solid var(--border); font-size: 0.9rem;">
+                <td style="padding: 8px; font-weight: 800; color: var(--primary);">#${p.queue_position} (${p.token_number})</td>
+                <td style="padding: 8px; font-weight: 600;">${p.patient_name}</td>
+                <td style="padding: 8px;"><b>${p.scheduled_time || 'Queue'}</b></td>
+                <td style="padding: 8px;"><span class="badge ${p.priority === 'Emergency' ? 'badge-emergency' : 'badge-regular'}">${p.priority}</span></td>
+                <td style="padding: 8px;"><span class="badge badge-senior">${p.status}</span></td>
+              </tr>
+            `;
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load doctor queue:', err);
       }
-
-      data.tokens.filter(t => t.status === 'Waiting').forEach(t => {
-        if (t.priority === 'Emergency') emergencyCount++;
-        if (t.priority === 'Senior Citizen') seniorCount++;
-
-        tbody.innerHTML += `
-          <tr style="border-bottom: 1px solid var(--border); font-size: 0.9rem;">
-            <td style="padding: 8px; font-weight: bold;">${t.token_number}</td>
-            <td style="padding: 8px;">${t.name || 'Patient'}</td>
-            <td style="padding: 8px;"><span class="badge ${t.priority === 'Emergency' ? 'badge-emergency' : 'badge-regular'}">${t.priority || 'Regular'}</span></td>
-            <td style="padding: 8px;">${t.status}</td>
-          </tr>
-        `;
-      });
-
-      document.getElementById('stat-emergency-count').innerText = emergencyCount;
-      document.getElementById('stat-senior-count').innerText = seniorCount;
     }
 
     async function loadCrowdChart() {
-      const res = await fetch(`${API_URL}/doctor/analytics/crowd`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
+      const res = await fetch(`${API_URL}/doctor/analytics/crowd`, { headers: { 'Authorization': `Bearer ${authToken}` } });
       const analyticsData = await res.json();
-
       const hours = analyticsData.map(d => `${d.hour}:00`);
       const counts = analyticsData.map(d => d.count);
 
       const ctx = document.getElementById('crowdChart').getContext('2d');
       if (chartInstance) chartInstance.destroy();
-
       chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
           labels: hours.length ? hours : ['9:00', '10:00', '11:00', '12:00', '13:00'],
-          datasets: [{
-            label: 'Patients Registered',
-            data: counts.length ? counts : [8, 15, 24, 18, 10],
-            backgroundColor: '#2563eb',
-            borderRadius: 6
-          }]
+          datasets: [{ label: 'Patients', data: counts.length ? counts : [8, 15, 24, 18, 10], backgroundColor: '#1d4ed8', borderRadius: 6 }]
         },
         options: { responsive: true, plugins: { legend: { display: false } } }
       });
     }
 
     async function callNextToken() {
-      const serviceId = localStorage.getItem("staffDepartmentId") || 1;
-      const res = await fetch(`${API_URL}/doctor/queue/${serviceId}`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
-      const data = await res.json();
-      const nextWaiting = data.tokens.find(t => t.status === 'Waiting');
-
-      if (!nextWaiting) return alert("No one is waiting right now.");
-      await updateTokenStatus(nextWaiting.token_id, 'Called');
+      try {
+        const res = await fetch(`${API_URL}/queue/doctor/call-next`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          loadDoctorQueue();
+          loadCrowdChart();
+        } else {
+          alert(data.error || 'Failed to call next patient.');
+        }
+      } catch (err) {
+        alert('Server error calling next patient.');
+      }
     }
 
     async function markCurrentCompleted() {
       if (!currentActiveTokenId) return alert("No patient is currently being served.");
 
-      const departmentId = parseInt(localStorage.getItem("staffDepartmentId") || 1);
+      const prescribeLab = document.getElementById('chain-prescribe-lab').checked;
+      const prescribePharmacy = document.getElementById('chain-prescribe-pharm').checked;
 
-      if (departmentId === 1) {
-        const prescribeLab = document.getElementById('chain-prescribe-lab').checked;
-        const prescribePharmacy = document.getElementById('chain-prescribe-pharm').checked;
+      try {
+        const res = await fetch(`${API_URL}/queue/doctor/complete`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            tokenId: currentActiveTokenId,
+            prescribeLab,
+            prescribePharmacy
+          })
+        });
+        const data = await res.json();
 
-        try {
-          const res = await fetch(`${API_URL}/doctor/tokens/${currentActiveTokenId}/chain-prescribe`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${authToken}`
-            },
-            body: JSON.stringify({ prescribeLab, prescribePharmacy })
-          });
-          const data = await res.json();
-
-          if (res.ok) {
-            document.getElementById('chain-prescribe-lab').checked = false;
-            document.getElementById('chain-prescribe-pharm').checked = false;
-
-            let msg = data.message;
-            if (data.chainedTokens && data.chainedTokens.length > 0) {
-              msg += "\n\nGenerated Sub-Tokens:\n" + data.chainedTokens.map(t => `• ${t.service}: Token ${t.tokenNumber} (~${t.estimatedWait} mins)`).join('\n');
-            }
-            alert(msg);
-
-            loadDoctorQueue();
-            loadCrowdChart();
-          } else {
-            alert(data.error || 'Failed to complete consultation.');
-          }
-        } catch (err) {
-          alert('Server error completing consultation.');
+        if (res.ok) {
+          document.getElementById('chain-prescribe-lab').checked = false;
+          document.getElementById('chain-prescribe-pharm').checked = false;
+          alert(data.message);
+          loadDoctorQueue();
+          loadCrowdChart();
+        } else {
+          alert(data.error || 'Failed to complete consultation.');
         }
-      } else {
-        await updateTokenStatus(currentActiveTokenId, 'Completed');
+      } catch (err) {
+        alert('Server error completing consultation.');
       }
     }
 
     async function markCurrentNoShow() {
       if (!currentActiveTokenId) return alert("No patient is currently being served.");
-      if (!confirm("Mark this patient as a no-show? They'll be removed from the active queue.")) return;
-      await updateTokenStatus(currentActiveTokenId, 'Cancelled');
+      if (!confirm("Mark current patient as No-Show / Cancelled?")) return;
+
+      try {
+        const res = await fetch(`${API_URL}/queue/doctor/no-show`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ tokenId: currentActiveTokenId })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          loadDoctorQueue();
+          loadCrowdChart();
+        } else {
+          alert(data.error || 'Failed to mark no-show.');
+        }
+      } catch (err) {
+        alert('Server error updating token.');
+      }
     }
 
-    async function updateTokenStatus(tokenId, newStatus) {
-      await fetch(`${API_URL}/doctor/tokens/${tokenId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-        body: JSON.stringify({ status: newStatus })
-      });
-      loadDoctorQueue();
-      loadCrowdChart();
+    // ---------------- PATIENT LIVE QUEUE POSITION POLLER ----------------
+    let patientQueuePollInterval = null;
+
+    function startPatientQueuePolling(tokenId) {
+      if (patientQueuePollInterval) clearInterval(patientQueuePollInterval);
+
+      async function poll() {
+        if (!authToken || userRole !== 'Patient') return;
+        try {
+          const res = await fetch(`${API_URL}/queue/patient/status/${tokenId}`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          });
+          const data = await res.json();
+
+          if (res.ok && data.success) {
+            document.getElementById('est-wait-text').innerText = `~${data.estimatedWaitMins} mins`;
+
+            if (data.status === 'Called') {
+              document.getElementById('est-wait-text').innerText = '🔔 YOUR TURN!';
+              document.getElementById('est-wait-text').style.color = '#dc2626';
+            }
+          }
+        } catch (e) {
+          console.log('Polling queue status...');
+        }
+      }
+
+      poll();
+      patientQueuePollInterval = setInterval(poll, 4000);
+    }
+
+    // ---------------- OPTION 1: IVR SIMULATION CONTROLLER ----------------
+    let ivrState = 'IDLE';
+    let ivrSlotData = null;
+
+    function openIvrModal() {
+      document.getElementById('modal-ivr-simulator').classList.remove('hidden');
+      resetIvrSession();
+    }
+
+    function closeIvrModal() {
+      endIvrCall();
+      document.getElementById('modal-ivr-simulator').classList.add('hidden');
+    }
+
+    function resetIvrSession() {
+      ivrState = 'IDLE';
+      ivrSlotData = null;
+      document.getElementById('ivr-call-status').innerText = 'READY TO CALL';
+      document.getElementById('ivr-call-status').style.color = '#38bdf8';
+      document.getElementById('ivr-display-text').innerText = 'Press "Start Call" to begin IVR token booking.';
+      document.getElementById('ivr-action-btn').innerText = '📞 Start Call';
+      document.getElementById('ivr-action-btn').style.background = '#16a34a';
+    }
+
+    function playIvrVoice(text) {
+      document.getElementById('ivr-display-text').innerText = text;
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-IN';
+        utterance.rate = 0.95;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function startIvrCall() {
+      ivrState = 'MAIN_MENU';
+      document.getElementById('ivr-call-status').innerText = '🟢 CALL IN PROGRESS (00:04)';
+      document.getElementById('ivr-call-status').style.color = '#4ade80';
+      document.getElementById('ivr-action-btn').innerText = 'Speaking...';
+
+      playIvrVoice("Welcome to City Hospital Smart Queue. Press 1 to book a 15-minute consultation slot with our on-duty specialist.");
+    }
+
+    function endIvrCall() {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      resetIvrSession();
+    }
+
+    async function handleIvrInput(key) {
+      if (ivrState === 'IDLE') {
+        alert("Press 'Start Call' first.");
+        return;
+      }
+
+      if (ivrState === 'MAIN_MENU') {
+        if (key === '1') {
+          document.getElementById('ivr-display-text').innerText = 'Checking doctor schedules for earliest slot...';
+
+          try {
+            const res = await fetch(`${API_URL}/ivr/earliest-slot?branch=${encodeURIComponent(selectedBranch)}`);
+            const data = await res.json();
+
+            if (res.ok && data.available) {
+              ivrSlotData = data;
+              ivrState = 'CONFIRM_SLOT';
+              const dayLabel = data.isTomorrow ? 'tomorrow' : 'today';
+              playIvrVoice(`The earliest 15 minute slot with ${data.doctor.name} is available ${dayLabel} at ${data.earliestSlot}. Press 2 to confirm your booking, or 3 to cancel.`);
+            } else {
+              ivrState = 'IDLE';
+              playIvrVoice(data.error || "Sorry, no consultation slots are available.");
+            }
+          } catch (e) {
+            playIvrVoice("Server connection error. Please try again.");
+          }
+        } else {
+          playIvrVoice("Invalid selection. Press 1 for Doctor Consultation.");
+        }
+      } else if (ivrState === 'CONFIRM_SLOT') {
+        if (key === '2') {
+          document.getElementById('ivr-display-text').innerText = 'Confirming your slot and issuing token...';
+
+          const callerPhone = currentUserPhone || '9876543210';
+          try {
+            const res = await fetch(`${API_URL}/ivr/book-token`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                staffId: ivrSlotData.doctor.staff_id,
+                hospitalBranch: selectedBranch,
+                scheduledTime: ivrSlotData.earliestSlot,
+                patientPhone: callerPhone
+              })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+              ivrState = 'COMPLETED';
+              playIvrVoice(`Your appointment is confirmed. Your token number is ${data.tokenNumber.split('').join(' ')} at ${data.scheduledTime}. An SMS text has been logged to your console.`);
+
+              if (userRole === 'Patient') {
+                checkAndRestoreActiveToken();
+              }
+            } else {
+              playIvrVoice(data.error || "Booking failed.");
+              ivrState = 'IDLE';
+            }
+          } catch (e) {
+            playIvrVoice("Error finalizing your booking.");
+          }
+        } else if (key === '3') {
+          playIvrVoice("Booking cancelled. Thank you for calling City Hospital.");
+          setTimeout(endIvrCall, 2500);
+        }
+      }
     }
   </script>
 </body>
