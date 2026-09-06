@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Branch Admin Console — City Hospital Smart Queue</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --primary-border: #bfdbfe;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --bg-main: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: #ffffff;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0.85rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .brand-icon {
+            background: var(--primary);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 0.82rem;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            letter-spacing: 0.5px;
+        }
+
+        .brand h3 {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--text-main);
+            line-height: 1.2;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            list-style: none;
+            gap: 1.25rem;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 600;
+            transition: color 0.15s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .nav-pill {
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            color: #1e40af;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-hamburger {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            flex-direction: column;
+            gap: 5px;
+            padding: 4px;
+        }
+
+        .nav-hamburger span {
+            width: 24px;
+            height: 2px;
+            background: var(--text-main);
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 1.75rem auto;
+            padding: 0 1.5rem;
+            flex: 1;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 0.35rem;
+        }
+
+        .card-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1.25rem;
+        }
+
+        .tab-group {
+            display: flex;
+            gap: 8px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 6px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+            background: #f1f5f9;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: #ffffff;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.65rem 1.25rem;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            font-size: 0.88rem;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s ease;
+            width: 100%;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.7rem 0.85rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            font-size: 0.9rem;
+            background: #ffffff;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .admin-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-tile {
+            margin: 0;
+            padding: 1.1rem;
+            text-align: center;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+
+        .stat-tile p {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .stat-tile .stat-val {
+            font-size: 2.1rem;
+            font-weight: 900;
+            color: var(--text-main);
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.88rem;
+        }
+
+        .admin-table th {
+            background: #f8fafc;
+            padding: 10px 12px;
+            border-bottom: 2px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .admin-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .badge-regular {
+            background: var(--primary-light);
+            color: #1e40af;
+            border: 1px solid var(--primary-border);
+        }
+
+        .badge-senior {
+            background: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fcd34d;
+        }
+
+        .badge-emergency {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .site-footer {
+            background: #0f172a;
+            color: #94a3b8;
+            padding: 3rem 1.5rem 1.5rem;
+            margin-top: auto;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 2.5rem;
+        }
+
+        .footer-brand-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 0.75rem;
+        }
+
+        .footer-brand h4 {
+            color: #ffffff;
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        .footer-tagline {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #64748b;
+        }
+
+        .footer-col h5 {
+            color: #ffffff;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .footer-col ul {
+            list-style: none;
+        }
+
+        .footer-col li {
+            margin-bottom: 0.4rem;
+        }
+
+        .footer-col a,
+        .footer-col span {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+
+        .footer-col a:hover,
+        .footer-col span:hover {
+            color: #ffffff;
+        }
+
+        .footer-bottom {
+            max-width: 1400px;
+            margin: 2rem auto 0;
+            padding-top: 1.25rem;
+            border-top: 1px solid #1e293b;
+            font-size: 0.8rem;
+            text-align: center;
+            color: #64748b;
+        }
+
+        @media (max-width: 768px) {
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .nav-hamburger {
+                display: flex;
+            }
+
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                width: 100%;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: #ffffff;
+                padding: 1.25rem 1.5rem;
+                border-bottom: 1px solid var(--border);
+                box-shadow: var(--shadow-md);
+            }
+
+            .nav-links.mobile-open {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="nav-container">
+            <div class="brand" onclick="window.location.href='index.html'">
+                <div class="brand-icon">Noline</div>
+                <div>
+                    <h3>Smart Queue</h3>
+                    <p style="font-size:0.7rem; color:var(--text-muted);" id="nav-brand-sub">Branch Admin Console</p>
+                </div>
+            </div>
+
+            <ul class="nav-links">
+                <li><a href="index.html">← OPD Portal</a></li>
+                <li><a href="desk.html" target="_blank">📋 Walk-in Desk</a></li>
+                <li><a href="tv-display.html" target="_blank">📺 Public Display</a></li>
+                <li><a href="notice-board.html" target="_blank">📌 Public Notice Board</a></li>
+                <li id="nav-branch-pill" class="hidden">
+                    <span class="nav-pill" id="header-branch-name">
+                        🏥 City Hospital (Main Branch)
+                    </span>
+                </li>
+                <li id="nav-logout-item" class="hidden">
+                    <button class="btn"
+                        style="padding: 5px 12px; margin: 0; width: auto; font-size: 0.8rem; background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;"
+                        onclick="branchAdminLogout()">Logout</button>
+                </li>
+            </ul>
+
+            <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileNav()" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- LOGIN GATE -->
+        <main id="branch-admin-login-view" style="max-width: 440px; margin: 2rem auto 4rem auto;">
+            <div class="card" style="box-shadow: var(--shadow-md);">
+                <h2 class="card-title" style="margin-bottom: 0.2rem;">🏥 Branch Admin Sign In</h2>
+                <p class="card-subtitle" style="margin-bottom: 1.25rem;">Select your hospital facility to access staff
+                    rosters and queue governance.</p>
+
+                <form onsubmit="handleBranchAdminLogin(event)">
+                    <div class="form-group">
+                        <label>Hospital Branch</label>
+                        <select id="branch-login-select">
+                            <option value="City Hospital (Main Branch)">City Hospital (Main Branch)</option>
+                            <option value="City Hospital (Gomti Nagar)">City Hospital (Gomti Nagar)</option>
+                            <option value="City Hospital (Aliganj Wing)">City Hospital (Aliganj Wing)</option>
+                            <option value="City Hospital (Indira Nagar)">City Hospital (Indira Nagar)</option>
+                            <option value="City Hospital (Charbagh)">City Hospital (Charbagh)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Staff / Admin Phone</label>
+                        <input type="tel" id="branch-admin-phone" placeholder="9999999999" required value="9999999999">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="branch-admin-password" placeholder="admin123" required
+                            value="admin123">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Access Branch Console</button>
+                </form>
+            </div>
+        </main>
+
+        <!-- PROTECTED DASHBOARD VIEW -->
+        <main id="branch-dashboard-view" class="hidden">
+
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h2 id="active-branch-title"
+                        style="margin: 0; font-size: 1.5rem; font-weight: 800; color: var(--text-main);">City Hospital
+                        (Main Branch)</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 2px;">Branch Facility
+                        Operations, Doctor Allocation & Token Reschedule Authority</p>
+                </div>
+                <button class="btn btn-primary" style="width: auto; padding: 8px 16px; font-size: 0.85rem;"
+                    onclick="loadBranchData()">
+                    🔄 Refresh Branch Data
+                </button>
+            </div>
+
+            <div class="tab-group" style="margin-bottom: 1.5rem;">
+                <button id="tab-btn-analytics" class="tab-btn active" onclick="switchTab('analytics')">📊 Branch
+                    Analytics</button>
+                <button id="tab-btn-doctors" class="tab-btn" onclick="switchTab('doctors')">🩺 Doctor
+                    Management</button>
+                <button id="tab-btn-reschedule" class="tab-btn" onclick="switchTab('reschedule')">
+                    ⏳ Reschedule Inbox (<span id="badge-pending-count" style="font-weight: 800;">0</span>)
+                </button>
+                <button id="tab-btn-notices" class="tab-btn" onclick="switchTab('notices')">
+                    📢 Notice Board
+                </button>
+            </div>
+
+            <!-- TAB 1: ANALYTICS -->
+            <section id="section-analytics">
+                <div class="admin-stats-grid">
+                    <div class="stat-tile"
+                        style="background: var(--primary-light); border-color: var(--primary-border);">
+                        <p style="color: var(--primary);">Total Tokens Today</p>
+                        <div id="stat-total-tokens" class="stat-val" style="color: var(--primary);">0</div>
+                    </div>
+                    <div class="stat-tile" style="background: #fffbeb; border-color: #fcd34d;">
+                        <p style="color: #d97706;">Patients Waiting</p>
+                        <div id="stat-waiting-tokens" class="stat-val" style="color: #d97706;">0</div>
+                    </div>
+                    <div class="stat-tile" style="background: #f0fdf4; border-color: #bbf7d0;">
+                        <p style="color: #16a34a;">Serving Now</p>
+                        <div id="stat-serving-tokens" class="stat-val" style="color: #16a34a;">0</div>
+                    </div>
+                    <div class="stat-tile">
+                        <p>Completed Today</p>
+                        <div id="stat-completed-tokens" class="stat-val">0</div>
+                    </div>
+                    <div class="stat-tile" style="background: #fdf4ff; border-color: #f5d0fe;">
+                        <p style="color: #9333ea;">Doctors On Duty</p>
+                        <div id="stat-doctors-duty" class="stat-val" style="color: #9333ea;">0 / 0</div>
+                    </div>
+                </div>
+
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                    <div class="card" style="margin: 0;">
+                        <h3 class="card-title">Service Queue Distribution</h3>
+                        <p class="card-subtitle" style="margin-bottom: 1rem;">Status breakdown of all today's
+                            registrations</p>
+                        <canvas id="branchVolumeChart" style="max-height: 240px;"></canvas>
+                    </div>
+                    <div class="card" style="margin: 0;">
+                        <h3 class="card-title">Triage Priority Ratio</h3>
+                        <p class="card-subtitle" style="margin-bottom: 1rem;">Distribution of standard, senior, and
+                            emergency walk-ins</p>
+                        <canvas id="triageChart" style="max-height: 240px;"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: DOCTOR MANAGEMENT -->
+            <section id="section-doctors" class="hidden">
+                <div class="card" style="margin: 0;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <div>
+                            <h3 class="card-title">Specialist Doctors Roster</h3>
+                            <p class="card-subtitle">Manage doctor duty schedules and branch assignments.</p>
+                        </div>
+                        <button class="btn btn-primary" style="width: auto; padding: 6px 14px; font-size: 0.85rem;"
+                            onclick="openAddDoctorModal()">+ Add Doctor</button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Doctor Name</th>
+                                    <th>Specialty</th>
+                                    <th>Contact</th>
+                                    <th>Duty Status</th>
+                                    <th>Unavailability Note</th>
+                                    <th style="text-align: right;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="doctor-table-body">
+                                <tr>
+                                    <td colspan="6" style="text-align:center; padding:1.5rem; color:#64748b;">Loading
+                                        doctors...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: RESCHEDULE GOVERNANCE -->
+            <section id="section-reschedule" class="hidden">
+                <div class="card" style="margin: 0;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <div>
+                            <h3 class="card-title">Token Rescheduling Requests</h3>
+                            <p class="card-subtitle">Review, accept, or reject same-day patient slot shift requests.</p>
+                        </div>
+                        <button class="btn btn-primary" style="width: auto; padding: 6px 12px; font-size: 0.8rem;"
+                            onclick="loadRescheduleRequests()">Refresh</button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Req ID</th>
+                                    <th>Token #</th>
+                                    <th>Patient Details</th>
+                                    <th>Requested Time</th>
+                                    <th>Patient Reason</th>
+                                    <th>Decision Status</th>
+                                    <th style="text-align: right;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reschedule-table-body">
+                                <tr>
+                                    <td colspan="7" style="text-align:center; padding:1.5rem; color:#64748b;">No
+                                        reschedule requests today.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: NOTICE BOARD MANAGER -->
+            <section id="section-notices" class="hidden">
+                <div class="card" style="margin: 0;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <div>
+                            <h3 class="card-title">📢 Branch Notice Board Manager</h3>
+                            <p class="card-subtitle" style="margin-bottom: 0;">Publish live announcements, emergency
+                                alerts, and schedule shifts for this facility.</p>
+                        </div>
+                        <a href="notice-board.html" target="_blank" class="btn btn-primary"
+                            style="width: auto; padding: 6px 14px; font-size: 0.85rem;">🖥️ Open Public Display</a>
+                    </div>
+
+                    <form onsubmit="handleAdminPublishNotice(event)"
+                        style="background: #f8fafc; padding: 1.2rem; border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: 1.5rem;">
+                        <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--primary);">+ Publish Live
+                            Bulletin</h4>
+
+                        <div
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 0.75rem;">
+                            <div class="form-group" style="margin: 0;">
+                                <label>Notice Title <span style="color:red;">*</span></label>
+                                <input type="text" id="admin-notice-title" required
+                                    placeholder="e.g. Free Blood Camp / ICU Protocol">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label>Category</label>
+                                <select id="admin-notice-category">
+                                    <option value="General">General</option>
+                                    <option value="Doctor Update">Doctor Update</option>
+                                    <option value="Camp / Drive">Camp / Drive</option>
+                                    <option value="Emergency">Emergency</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label>Priority</label>
+                                <select id="admin-notice-priority">
+                                    <option value="Normal">Normal</option>
+                                    <option value="High">High (Flashing Red Alert)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                            <label>Message Content <span style="color:red;">*</span></label>
+                            <textarea id="admin-notice-message" required rows="2"
+                                placeholder="Detail clinical or administrative instructions for visitors..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width: auto; padding: 8px 20px;">
+                            🚀 Post Notice Live
+                        </button>
+                    </form>
+
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                        <h4 style="font-size: 0.95rem;">Current Facility Bulletins</h4>
+                        <button class="btn btn-primary" style="width: auto; padding: 4px 10px; font-size: 0.75rem;"
+                            onclick="loadBranchNotices()">
+                            🔄 Refresh Notices
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Bulletin Title & Message</th>
+                                    <th>Category</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th style="text-align: right;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-notices-table-body">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; padding: 1.5rem; color: #64748b;">Loading
+                                        notices...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- MODAL: ADD DOCTOR -->
+    <div id="modal-add-doc" class="modal-backdrop hidden">
+        <div class="card"
+            style="background: white; max-width: 480px; width: 90%; margin: 0; box-shadow: var(--shadow-lg);">
+            <h3 class="card-title">➕ Add Doctor to Branch</h3>
+            <p class="card-subtitle" style="margin-bottom: 1rem;">The doctor will be assigned to this branch's OPD
+                queue.</p>
+
+            <form onsubmit="handleAddDoctorSubmit(event)">
+                <div class="form-group">
+                    <label>Doctor Full Name</label>
+                    <input type="text" id="add-doc-name" placeholder="Dr. S. K. Gupta" required>
+                </div>
+                <div class="form-group">
+                    <label>Mobile Number</label>
+                    <input type="tel" id="add-doc-phone" placeholder="9100000099" required maxlength="10">
+                </div>
+                <div class="form-group">
+                    <label>Specialty</label>
+                    <select id="add-doc-spec">
+                        <option value="Cardiology">Cardiology</option>
+                        <option value="Neurology">Neurology</option>
+                        <option value="Orthopedics">Orthopedics</option>
+                        <option value="Dermatology">Dermatology</option>
+                        <option value="General Medicine">General Medicine</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Assign Password</label>
+                    <input type="password" id="add-doc-pwd" placeholder="doc123" required minlength="4">
+                </div>
+
+                <button type="submit" class="btn btn-primary">Save & Assign Doctor</button>
+                <button type="button" class="btn" style="background:#f1f5f9; color:#0f172a; margin-top:0.5rem;"
+                    onclick="document.getElementById('modal-add-doc').classList.add('hidden')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: 2-STEP CONFIRMATION DELETE DOCTOR -->
+    <div id="modal-delete-doc" class="modal-backdrop hidden">
+        <div class="card"
+            style="background: white; max-width: 440px; width: 90%; margin: 0; border: 2px solid #ef4444; box-shadow: var(--shadow-lg);">
+            <div style="font-size: 2.2rem; text-align: center; color: #ef4444;">⚠️</div>
+            <h3 class="card-title" style="text-align: center; color: #b91c1c; margin-top: 0.2rem;">2-Step Doctor Removal
+            </h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); text-align: center; margin: 0.5rem 0 1rem;">
+                You are about to remove <b id="del-doc-target-name" style="color: #0f172a;">-</b>. Type the doctor's
+                full name to confirm.
+            </p>
+
+            <div
+                style="background: #fef2f2; border: 1px solid #fca5a5; padding: 10px; border-radius: 8px; margin-bottom: 1rem;">
+                <input type="text" id="del-doc-confirm-input" placeholder="Type doctor name..."
+                    style="width: 100%; padding: 0.6rem; border-radius: 6px; border: 1px solid #ef4444; font-size: 0.9rem;">
+            </div>
+
+            <button class="btn" style="background:#dc2626; color:white; width: 100%; font-weight: 700;"
+                onclick="executeDoctorDeletion()">Confirm & Remove Doctor</button>
+            <button type="button" class="btn"
+                style="background:#f1f5f9; color:#0f172a; width: 100%; margin-top: 0.5rem;"
+                onclick="document.getElementById('modal-delete-doc').classList.add('hidden')">Cancel</button>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="footer-brand-row">
+                    <div class="brand-icon">OnLine</div>
+                    <h4>Smart Queue</h4>
+                </div>
+                <p class="footer-tagline">
+                    Live OPD queue status, digital tokens, and offline-capable passes for City Hospital branches —
+                    eliminating waiting room bottlenecks.
+                </p>
+            </div>
+
+            <div class="footer-col">
+                <h5>Quick Links</h5>
+                <ul>
+                    <li><a href="index.html">Select Hospital</a></li>
+                    <li><a href="desk.html" target="_blank">📋 Walk-in Desk</a></li>
+                    <li><a href="kiosk.html" target="_blank">📷 Kiosk Scanner</a></li>
+                    <li><a href="tv-display.html" target="_blank">📺 Public Display</a></li>
+                    <li><a href="notice-board.html" target="_blank">📌 Public Notice Board</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h5>Branches</h5>
+                <ul>
+                    <li><span>Hazratganj (Main)</span></li>
+                    <li><span>Gomti Nagar</span></li>
+                    <li><span>Aliganj Wing</span></li>
+                    <li><span>Indira Nagar</span></li>
+                    <li><span>Charbagh</span></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 City Hospital Smart Queue. Built for faster, fairer OPD healthcare.
+        </div>
+    </footer>
+
+    <script>
+        const API_URL = window.location.origin + "/api";
+        let branchScope = localStorage.getItem('branchAdminBranch') || "City Hospital (Main Branch)";
+        let targetDoctorToDelete = null;
+        let volumeChart = null, triageChart = null;
+
+        function getActiveAdminToken() {
+            return sessionStorage.getItem('branchAdminToken') || localStorage.getItem('token') || '';
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = getActiveAdminToken();
+            if (token) {
+                showDashboard();
+            }
+        });
+
+        function toggleMobileNav() {
+            document.getElementById('nav-hamburger').classList.toggle('open');
+            document.querySelector('.nav-links').classList.toggle('mobile-open');
+        }
+
+        async function handleBranchAdminLogin(e) {
+            e.preventDefault();
+            branchScope = document.getElementById('branch-login-select').value;
+            const phone = document.getElementById('branch-admin-phone').value.trim();
+            const password = document.getElementById('branch-admin-password').value.trim();
+
+            try {
+                const res = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone, password, hospitalBranch: branchScope })
+                });
+                const data = await res.json();
+
+                if (res.ok && (data.role === 'BranchAdmin' || data.role === 'SuperAdmin')) {
+                    sessionStorage.setItem('branchAdminToken', data.token);
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('userRole', data.role);
+                    localStorage.setItem('branchAdminBranch', branchScope);
+                    localStorage.setItem('adminBranch', branchScope);
+                    showDashboard();
+                } else {
+                    alert(data.error || 'Authentication failed: Valid Branch Admin credentials required.');
+                }
+            } catch (err) {
+                alert('Server connection error during login.');
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('branch-admin-login-view').classList.add('hidden');
+            document.getElementById('branch-dashboard-view').classList.remove('hidden');
+            document.getElementById('nav-branch-pill').classList.remove('hidden');
+            document.getElementById('nav-logout-item').classList.remove('hidden');
+            document.getElementById('header-branch-name').innerText = `🏥 ${branchScope}`;
+            document.getElementById('active-branch-title').innerText = branchScope;
+            loadBranchData();
+        }
+
+        function branchAdminLogout() {
+            sessionStorage.removeItem('branchAdminToken');
+            localStorage.removeItem('token');
+            localStorage.removeItem('userRole');
+            location.reload();
+        }
+
+        function switchTab(tabKey) {
+            ['analytics', 'doctors', 'reschedule', 'notices'].forEach(k => {
+                const btn = document.getElementById(`tab-btn-${k}`);
+                const section = document.getElementById(`section-${k}`);
+                if (btn) btn.classList.toggle('active', k === tabKey);
+                if (section) section.classList.toggle('hidden', k !== tabKey);
+            });
+
+            if (tabKey === 'notices') {
+                loadBranchNotices();
+            }
+        }
+
+        function loadBranchData() {
+            loadBranchAnalytics();
+            loadBranchDoctors();
+            loadRescheduleRequests();
+            loadBranchNotices();
+        }
+
+        async function loadBranchAnalytics() {
+            const token = getActiveAdminToken();
+            try {
+                const res = await fetch(`${API_URL}/branch-admin/analytics?branch=${encodeURIComponent(branchScope)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    document.getElementById('stat-total-tokens').innerText = data.tokens.total_today || 0;
+                    document.getElementById('stat-waiting-tokens').innerText = data.tokens.waiting_count || 0;
+                    document.getElementById('stat-serving-tokens').innerText = data.tokens.serving_count || 0;
+                    document.getElementById('stat-completed-tokens').innerText = data.tokens.completed_count || 0;
+                    document.getElementById('stat-doctors-duty').innerText = `${data.doctors.on_duty_doctors || 0} / ${data.doctors.total_doctors || 0}`;
+                    document.getElementById('badge-pending-count').innerText = data.pendingReschedules || 0;
+
+                    renderCharts(data);
+                }
+            } catch (err) {
+                console.error('Failed to load analytics:', err);
+            }
+        }
+
+        function renderCharts(data) {
+            const ctxVol = document.getElementById('branchVolumeChart').getContext('2d');
+            if (volumeChart) volumeChart.destroy();
+            volumeChart = new Chart(ctxVol, {
+                type: 'bar',
+                data: {
+                    labels: ['Waiting', 'Serving', 'Completed', 'Cancelled'],
+                    datasets: [{
+                        label: 'Patients',
+                        data: [
+                            data.tokens.waiting_count || 0,
+                            data.tokens.serving_count || 0,
+                            data.tokens.completed_count || 0,
+                            data.tokens.cancelled_count || 0
+                        ],
+                        backgroundColor: ['#f59e0b', '#2563eb', '#10b981', '#ef4444'],
+                        borderRadius: 6
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+
+            const ctxTriage = document.getElementById('triageChart').getContext('2d');
+            if (triageChart) triageChart.destroy();
+            triageChart = new Chart(ctxTriage, {
+                type: 'doughnut',
+                data: {
+                    labels: data.triage.map(t => t.priority),
+                    datasets: [{
+                        data: data.triage.map(t => t.count),
+                        backgroundColor: ['#2563eb', '#f59e0b', '#dc2626']
+                    }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        async function loadBranchDoctors() {
+            const token = getActiveAdminToken();
+            const tbody = document.getElementById('doctor-table-body');
+            try {
+                const res = await fetch(`${API_URL}/branch-admin/doctors?branch=${encodeURIComponent(branchScope)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const doctors = await res.json();
+
+                tbody.innerHTML = (doctors || []).map(d => `
+                    <tr>
+                        <td style="font-weight:700;">${d.name}</td>
+                        <td><span class="badge badge-regular">${d.specialty}</span></td>
+                        <td>${d.phone}</td>
+                        <td><span class="badge ${d.is_available ? 'badge-regular' : 'badge-emergency'}">${d.is_available ? '🟢 On Duty' : '🔴 Unavailable'}</span></td>
+                        <td style="color:var(--text-muted); font-size:0.85rem;">${d.unavailability_reason || '—'}</td>
+                        <td style="text-align:right;">
+                            <button class="btn" style="background:#fee2e2; color:#dc2626; border:1px solid #fecaca; padding:4px 10px; font-size:0.75rem; width:auto; margin:0;" onclick="promptDoctorDeletion(${d.staff_id}, '${d.name}')">🗑 Remove</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#dc2626; padding:1.5rem;">Error fetching doctors.</td></tr>`;
+            }
+        }
+
+        function openAddDoctorModal() { document.getElementById('modal-add-doc').classList.remove('hidden'); }
+
+        async function handleAddDoctorSubmit(e) {
+            e.preventDefault();
+            const token = getActiveAdminToken();
+            const payload = {
+                name: document.getElementById('add-doc-name').value.trim(),
+                phone: document.getElementById('add-doc-phone').value.trim(),
+                specialty: document.getElementById('add-doc-spec').value,
+                password: document.getElementById('add-doc-pwd').value,
+                hospitalBranch: branchScope
+            };
+
+            const res = await fetch(`${API_URL}/branch-admin/doctors`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                alert(data.message);
+                document.getElementById('modal-add-doc').classList.add('hidden');
+                e.target.reset();
+                loadBranchData();
+            } else {
+                alert(data.error || 'Failed to add doctor.');
+            }
+        }
+
+        function promptDoctorDeletion(staffId, doctorName) {
+            targetDoctorToDelete = { staffId, name: doctorName };
+            document.getElementById('del-doc-target-name').innerText = doctorName;
+            document.getElementById('del-doc-confirm-input').value = '';
+            document.getElementById('modal-delete-doc').classList.remove('hidden');
+        }
+
+        async function executeDoctorDeletion() {
+            if (!targetDoctorToDelete) return;
+            const token = getActiveAdminToken();
+            const typedName = document.getElementById('del-doc-confirm-input').value.trim();
+
+            if (typedName.toLowerCase() !== targetDoctorToDelete.name.toLowerCase()) {
+                alert("Name mismatch: Type the doctor's name exactly as shown.");
+                return;
+            }
+
+            const res = await fetch(`${API_URL}/branch-admin/doctors/${targetDoctorToDelete.staffId}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ confirmationName: typedName })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                alert(data.message);
+                document.getElementById('modal-delete-doc').classList.add('hidden');
+                loadBranchData();
+            } else {
+                alert(data.error || 'Failed to delete doctor.');
+            }
+        }
+
+        async function loadRescheduleRequests() {
+            const token = getActiveAdminToken();
+            const tbody = document.getElementById('reschedule-table-body');
+            try {
+                const res = await fetch(`${API_URL}/branch-admin/reschedule-requests?branch=${encodeURIComponent(branchScope)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const requests = await res.json();
+
+                if (!requests || requests.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.5rem; color:#64748b;">No reschedule requests today.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = requests.map(r => `
+                    <tr>
+                        <td style="font-weight:700;">#REQ-${r.request_id}</td>
+                        <td style="font-weight:800; color:var(--primary);">${r.token_number}</td>
+                        <td><b>${r.patient_name || 'Guest'}</b> <br><small style="color:var(--text-muted);">${r.patient_phone}</small></td>
+                        <td>${r.requested_time}</td>
+                        <td style="max-width:220px;"><i>"${r.reason}"</i></td>
+                        <td><span class="badge ${r.status === 'Approved' ? 'badge-regular' : r.status === 'Pending' ? 'badge-senior' : 'badge-emergency'}">${r.status}</span></td>
+                        <td style="text-align:right;">
+                            ${r.status === 'Pending' ? `
+                                <div style="display: inline-flex; gap: 4px;">
+                                    <button class="btn btn-primary" style="padding:4px 8px; font-size:0.75rem; width:auto; margin:0;" onclick="resolveReschedule(${r.request_id}, 'Approved')">✔ Accept</button>
+                                    <button class="btn" style="background:#fee2e2; color:#dc2626; border:1px solid #fecaca; padding:4px 8px; font-size:0.75rem; width:auto; margin:0;" onclick="resolveReschedule(${r.request_id}, 'Rejected')">✕ Reject</button>
+                                </div>
+                            ` : `<small style="color:var(--text-muted);">${r.admin_response_note || 'Resolved'}</small>`}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#dc2626; padding:1.5rem;">Error fetching requests.</td></tr>`;
+            }
+        }
+
+        async function resolveReschedule(requestId, action) {
+            const token = getActiveAdminToken();
+            const note = prompt(`Enter note for patient (${action}):`, action === 'Approved' ? 'Slot rescheduled to next open window.' : 'Slot retained as scheduled.');
+            if (note === null) return;
+
+            const res = await fetch(`${API_URL}/branch-admin/reschedule-requests/${requestId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ action, responseNote: note })
+            });
+            const data = await res.json();
+            alert(data.message);
+            loadBranchData();
+        }
+
+        // ---------------- NOTICE BOARD MANAGEMENT ----------------
+        async function loadBranchNotices() {
+            const tbody = document.getElementById('admin-notices-table-body');
+            if (!tbody) return;
+
+            const token = getActiveAdminToken();
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:#64748b;">Loading notices...</td></tr>';
+
+            try {
+                const res = await fetch(`${API_URL}/admin/notices?branch=${encodeURIComponent(branchScope)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const rawText = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(rawText);
+                } catch (e) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#dc2626; padding:1.5rem;">Server returned non-JSON response (${res.status}). Ensure server.js was restarted.</td></tr>`;
+                    return;
+                }
+
+                if (!res.ok) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#dc2626; padding:1.5rem;">${data.error || 'Access Denied: Admin session invalid.'}</td></tr>`;
+                    return;
+                }
+
+                if (!data.notices || data.notices.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:#64748b;">No bulletins on file for this branch. Create one above.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.notices.map(n => `
+                    <tr>
+                        <td>
+                            <b>${n.title}</b>
+                            <div style="font-size:0.8rem; color:var(--text-muted); margin-top:2px;">${n.message}</div>
+                            <small style="color:#94a3b8;">${n.posted_time}</small>
+                        </td>
+                        <td><span class="badge badge-regular">${n.category}</span></td>
+                        <td><span class="badge ${n.priority === 'High' ? 'badge-emergency' : 'badge-regular'}">${n.priority}</span></td>
+                        <td><span class="badge ${n.is_active ? 'badge-senior' : 'badge-regular'}">${n.is_active ? '🟢 Active' : '⚪ Archived'}</span></td>
+                        <td style="text-align:right;">
+                            <div style="display:inline-flex; gap:6px;">
+                                <button class="btn" style="width:auto; padding:4px 8px; font-size:0.75rem; background:#f1f5f9; border:1px solid #cbd5e1; margin:0;" onclick="toggleBranchNoticeState(${n.notice_id}, ${n.is_active ? 0 : 1})">
+                                    ${n.is_active ? 'Archive' : 'Activate'}
+                                </button>
+                                <button class="btn" style="width:auto; padding:4px 8px; font-size:0.75rem; background:#fee2e2; color:#dc2626; border:1px solid #fecaca; margin:0;" onclick="deleteBranchNotice(${n.notice_id})">
+                                    🗑
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#dc2626; padding:1.5rem;">Network Failure: ${err.message}</td></tr>`;
+            }
+        }
+
+        async function handleAdminPublishNotice(e) {
+            e.preventDefault();
+            const token = getActiveAdminToken();
+
+            const payload = {
+                hospitalBranch: branchScope,
+                title: document.getElementById('admin-notice-title').value.trim(),
+                category: document.getElementById('admin-notice-category').value,
+                priority: document.getElementById('admin-notice-priority').value,
+                message: document.getElementById('admin-notice-message').value.trim()
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/admin/notices`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const rawText = await res.text();
+                let data;
+                try {
+                    data = JSON.parse(rawText);
+                } catch (err) {
+                    alert(`Server returned HTTP ${res.status} HTML response. Restart node server.js.`);
+                    return;
+                }
+
+                if (res.ok) {
+                    alert('✅ Notice published live to the digital notice board!');
+                    e.target.reset();
+                    loadBranchNotices();
+                } else {
+                    alert(data.error || 'Failed to post notice.');
+                }
+            } catch (err) {
+                alert('Connection error: ' + err.message);
+            }
+        }
+
+        async function toggleBranchNoticeState(id, newStatus) {
+            const token = getActiveAdminToken();
+            try {
+                const res = await fetch(`${API_URL}/admin/notices/${id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ isActive: newStatus })
+                });
+                if (res.ok) loadBranchNotices();
+            } catch (err) {
+                alert('Failed to update bulletin state.');
+            }
+        }
+
+        async function deleteBranchNotice(id) {
+            if (!confirm("Permanently delete this bulletin?")) return;
+            const token = getActiveAdminToken();
+            try {
+                const res = await fetch(`${API_URL}/admin/notices/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) loadBranchNotices();
+            } catch (err) {
+                alert('Failed to delete bulletin.');
+            }
+        }
+    </script>
+</body>
+
+</html>
